@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 import os
-
+##Used for distributing the code.
 DESCRIPTION = 'OpenAI Gym environment designed for training RL agents to control the flight of a two-dimensional drone.'
 LONG_DESCRIPTION = ('This package contains OpenAI Gym environment designed for training RL agents to control the flight of a '
                     'two-dimensional drone. The environment is automatically registered under id: drone-2d-custom-v0, '
