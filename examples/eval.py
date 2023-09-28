@@ -21,7 +21,7 @@ but because of this, you cannot easily resume their training.
 If you are interested in resuming learning, please use Python 3.7.
 """
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-    model = PPO.load("./examples/ppo_agents/ppo_agent.zip",env)#"./ppo_agents/ppo_agent.zip") examples\ppo_agents\ppo_agent.zip
+    model = PPO.load("Drone-2d-custom-gym-env-for-reinforcement-learning\examples\ppo_agents\ppo_agent.zip" ,env)#"./ppo_agents/ppo_agent.zip") examples\ppo_agents\ppo_agent.zip
 else:
     model = PPO.load("./ppo_agents/ppo_agent_python3.7.zip")
 
