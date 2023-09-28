@@ -179,7 +179,7 @@ class Drone2dEnv(gym.Env):
         pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, 700, 700), 4)
         pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(200, 200, 400, 400), 4)
 
-        #Drawing done's shade
+        #Drawing drone's shade
         if len(self.path_drone_shade):
             for shade in self.path_drone_shade:
                 image_rect_rotated = pygame.transform.rotate(self.shade_image, shade[2]*180.0/np.pi)
