@@ -55,7 +55,8 @@ class Drone2dEnv(gym.Env):
         self.x_target = random.uniform(50, 750)
         self.y_target = random.uniform(50, 750)
 
-        #Defining spaces for action and observation
+        #Defining spaces for action and observation  Think these go to the thrust directly.
+        #Must discretize these to up down left right and hover iguess and send these signals to the controller to be implemented.
         min_action = np.array([-1, -1], dtype=np.float32)
         max_action = np.array([1, 1], dtype=np.float32)
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
