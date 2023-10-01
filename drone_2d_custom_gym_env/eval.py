@@ -3,7 +3,17 @@ import gym
 import time
 import sys
 
-import drone_2d_custom_gym_env
+from drone_2d_env import * 
+
+from gym.envs.registration import register
+
+register(
+    id='drone-2d-custom-v0',
+    entry_point='drone_2d_env:Drone2dEnv',
+    kwargs={'render_sim': False, 'render_path': True, 'render_shade': True,
+            'shade_distance': 75, 'n_steps': 500, 'n_fall_steps': 10, 'change_target': False,
+            'initial_throw': True}
+)
 
 continuous_mode = True #if True, after completing one episode the next one will start automatically
 random_action = False #if True, the agent will take actions randomly
@@ -13,19 +23,8 @@ render_sim = True #if True, a graphic is generated
 env = gym.make('drone-2d-custom-v0', render_sim=render_sim, render_path=True, render_shade=True,
             shade_distance=70, n_steps=500, n_fall_steps=10, change_target=True, initial_throw=True)
 
-"""
-The example agent used here was originally trained with Python 3.7
-For this reason, it is not compatible with Python version >= 3.8
-Agent has been adapted to run in the newer version of Python,
-but because of this, you cannot easily resume their training.
-If you are interested in resuming learning, please use Python 3.7.
-"""
-if sys.version_info.major == 3 and sys.version_info.minor >= 8:
-    model = PPO.load("./examples/ppo_agents/bad_agent.zip" ,env) #ppo_agent.zip works nicely
-# else:
-#     model = PPO.load("./ppo_agents/ppo_agent_python3.7.zip")
 
-# model.set_env(env) Outdated i think
+model = PPO.load("./ppo_agents/ppo_agent.zip" ,env) #ppo_agent.zip works nicely
 
 random_seed = int(time.time())
 model.set_random_seed(random_seed)

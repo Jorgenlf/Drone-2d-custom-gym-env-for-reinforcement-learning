@@ -1,5 +1,6 @@
-from drone_2d_custom_gym_env.Drone import *
-from drone_2d_custom_gym_env.event_handler import *
+from Drone import *
+from obstacles import *
+from event_handler import *
 
 import gym
 from gym import spaces
@@ -22,7 +23,7 @@ class Drone2dEnv(gym.Env):
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
                  n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True):
-
+        print("entered init")
         self.render_sim = render_sim
         self.render_path = render_path
         self.render_shade = render_shade
@@ -96,6 +97,10 @@ class Drone2dEnv(gym.Env):
         self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
         self.drone_radius = self.drone.drone_radius
+
+        #Generating obstacles
+        self.obstacle1 = Obstacle(400, 400, 100, 100, (188, 72, 72), self.space)
+        
 
     def step(self, action):
         if self.first_step is True:
@@ -187,7 +192,7 @@ class Drone2dEnv(gym.Env):
                 shade_image_rect = image_rect_rotated.get_rect(center=(shade[0], 800-shade[1]))
                 self.screen.blit(image_rect_rotated, shade_image_rect)
 
-        self.space.debug_draw(self.draw_options)
+        self.space.debug_draw(self.draw_options) #Draws obstacles as theyre part of the space from pymunk
 
         #Drawing vectors of motor forces
         vector_scale = 0.05
