@@ -149,7 +149,7 @@ class Drone2dEnv(gym.Env):
         omega = self.drone.frame_shape.body.angular_velocity
         omega = np.clip(omega/11.7, -1, 1)
 
-        alpha = self.drone.frame_shape.body.angle
+        alpha = self.drone.frame_shape.body.angle 
         alpha = np.clip(alpha/(np.pi/2), -1, 1)
 
         x, y = self.drone.frame_shape.body.position
@@ -265,11 +265,25 @@ class Drone2dEnv(gym.Env):
         self.flight_path.append((x, 800-y))
 
     def add_drone_shade(self):
+        """
+        Adds the current position and angle of the drone to the path_drone_shade list, and updates the shade_x and shade_y
+        attributes to the current x and y coordinates of the drone.
+
+        Returns:
+            None
+        """
         x, y = self.drone.frame_shape.body.position
         self.path_drone_shade.append([x, y, self.drone.frame_shape.body.angle])
         self.shade_x = x
         self.shade_y = y
 
     def change_target_point(self, x, y):
-        self.x_target = x
-        self.y_target = y
+            """
+            Changes the target point for the drone to move towards.
+
+            Args:
+                x (float): The x-coordinate of the new target point.
+                y (float): The y-coordinate of the new target point.
+            """
+            self.x_target = x
+            self.y_target = y
