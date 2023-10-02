@@ -3,40 +3,32 @@ import pymunk.pygame_util
 import pygame
 
 #File contaning the class for the obstacles in the environment 
-#Create the class for the obstacles
 class Obstacle():
     
-    def __init__(self, x, y, shape, width, height, color, space, radius = 0) -> None:
-        if shape == "square":
-            self.obstacle_shape = pymunk.Poly.create_box(None, size=(width, height))
-        elif shape == "circle":
-            self.obstacle_shape = pymunk.Circle(None, radius)
-        else:
-            print("Invalid shape")
-            return
-        
+    def __init__(self, x, y, width, height, color, space) -> None:
         #Parameters
         self.color = color
         self.width = width
         self.height = height
-        self.radius = radius
 
+        #body
         obstacle_body = pymunk.Body(body_type=pymunk.Body.STATIC)
         obstacle_body.position = x, y
         
-        self.obstacle_shape.body = obstacle_body
+        #shape
+        self.obstacle_shape = pymunk.Poly.create_box(obstacle_body, size=(width, height))
         self.obstacle_shape.color = pygame.Color(color)
-        
+        self.obstacle_shape.elasticity = 0.8 
+        self.obstacle_shape.friction = 0.2 #Some friction
+        self.obstacle_shape.collision_type = 2
+
         space.add(obstacle_body, self.obstacle_shape)
     
     def get_position(self):
         return self.obstacle_shape.body.position
     
     def shape(self):
-        if Obstacle.shape == "circle":
-            return self.radius
-        else:
-            return self.width, self.height
+        return self.width, self.height
         
     def get_color(self):
         return self.color
