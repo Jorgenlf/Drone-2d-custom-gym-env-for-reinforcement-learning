@@ -19,8 +19,11 @@ class Drone():
         frame_body.angle = angle
 
         self.frame_shape.body = frame_body
-        self.frame_shape.sensor = True
+        self.frame_shape.sensor = True #If it is false the drone will do actual collisions with the obstacles yet I think it is enough to just register collisions as if they were sensors letting this be true
         self.frame_shape.color = pygame.Color((66, 135, 245))
+        self.frame_shape.elasticity = 0.2
+        self.frame_shape.collision_type = 1
+
 
         space.add(frame_body, self.frame_shape)
 

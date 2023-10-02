@@ -9,6 +9,11 @@ import numpy as np
 import random
 import os
 
+#Might make into own file such as eventhandler.py
+def drone_obstacle_collision(arbiter, space, data):
+    space.collison = True
+    return True
+
 class Drone2dEnv(gym.Env):
     """
     render_sim: (bool) if true, a graphic is generated
@@ -23,7 +28,6 @@ class Drone2dEnv(gym.Env):
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
                  n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True):
-        print("entered init")
         self.render_sim = render_sim
         self.render_path = render_path
         self.render_shade = render_shade
@@ -85,6 +89,12 @@ class Drone2dEnv(gym.Env):
         self.space = pymunk.Space()
         self.space.gravity = Vec2d(0, -1000)
 
+        self.space.collison = False
+
+        # Register collision handler
+        drone_obstacle_handler = self.space.add_collision_handler(1, 2) #Drone is collision type 1, obstacle is collision type 2
+        drone_obstacle_handler.begin = drone_obstacle_collision
+
         if self.render_sim is True:
             self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
             self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
@@ -99,8 +109,7 @@ class Drone2dEnv(gym.Env):
         self.drone_radius = self.drone.drone_radius
 
         #Generating obstacles
-        self.obstacle1 = Obstacle(400, 400, 100, 100, (188, 72, 72), self.space)
-        
+        self.obstacle1 = Obstacle(200, 200, 120, 120, (188, 72, 72), self.space)
 
     def step(self, action):
         if self.first_step is True:
@@ -143,6 +152,11 @@ class Drone2dEnv(gym.Env):
         #Stops episode, when time is up
         if self.current_time_step == self.max_time_steps:
             self.done = True
+
+        #Stops episode, if collision occurs
+        if self.space.collison is True:
+            self.done = True
+            reward = -10
 
         return obs, reward, self.done, self.info
 
