@@ -10,6 +10,8 @@ class Obstacle():
         self.color = color
         self.width = width
         self.height = height
+        self.x_pos = x
+        self.y_pos = y
 
         #body
         obstacle_body = pymunk.Body(body_type=pymunk.Body.STATIC)
@@ -32,6 +34,11 @@ class Obstacle():
         
     def get_color(self):
         return self.color
+    
+
+def generate_obstacles(space):
+    #TODO
+    pass
 
 #RAther make a superclass obstacle and then make a subclass for each shape #TODO
 

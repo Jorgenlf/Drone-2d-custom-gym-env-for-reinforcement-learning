@@ -4,9 +4,13 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fminbound
 
 from typing import Tuple
+#QPMI2D: Quadratic Path with Membership Functions for Interpolation in 2D based on Ørjans Master Thesis.
 
 class QPMI2D():
     def __init__(self, waypoints):
+        '''
+        Initialize the path with waypoints
+        '''
         self.waypoints = waypoints
         self.wp_idx = 0
         self.us = self._calculate_us()
@@ -59,27 +63,27 @@ class QPMI2D():
         return n
 
 
-    def calculate_ur(self, u):
+    def calculate_mu_r(self, u):
         '''
-        Calculate the membership function for the segment of the path that the parameter u is in.
+        Calculates the membership value to the polynomial behind the current polynomial.
         μr,m and μf,m are increasing and decreasing membership functions with value spans between zero and one.
         They represent the transition from one polynomial to another.
         '''
         n = self.get_u_index(u)
         try:
-            ur = (u - self.us[n]) / (self.us[n+1] - self.us[n])
+            my_r = (u - self.us[n]) / (self.us[n+1] - self.us[n])
         except IndexError:
-            ur = (u - self.us[n]) / (self.us[n+1] - self.us[n])
-        return ur
+            my_r = (u - self.us[n]) / (self.us[n+1] - self.us[n])
+        return my_r
 
 
-    def calculate_uf(self, u):
+    def calculate_mu_f(self, u):
         '''
-        Calculate the membership function for the segment of the path that the parameter u is in
+        Calculates membership value to the polynomial in front of the current polynomial.
         '''
         n = self.get_u_index(u)
-        uf = (self.us[n+1]-u)/(self.us[n+1] - self.us[n])
-        return uf        
+        mu_f = (self.us[n+1]-u)/(self.us[n+1] - self.us[n])
+        return mu_f        
 
 
     def __call__(self, u):
@@ -110,8 +114,8 @@ class QPMI2D():
 
         else: # else we are in the intermediate waypoints and we use membership functions to calc polynomials
             n = self.get_u_index(u)
-            ur = self.calculate_ur(u)
-            uf = self.calculate_uf(u)
+            mu_r = self.calculate_mu_r(u)
+            mu_f = self.calculate_mu_f(u)
             
             ax1 = self.x_params[n-1][0]
             ay1 = self.y_params[n-1][0]
@@ -133,8 +137,8 @@ class QPMI2D():
             x2 = ax2*u**2 + bx2*u + cx2
             y2 = ay2*u**2 + by2*u + cy2
 
-            x = ur*x2 + uf*x1
-            y = ur*y2 + uf*y1
+            x = mu_r*x2 + mu_f*x1
+            y = mu_r*y2 + mu_f*y1
 
         return np.array([x, y])
 
@@ -161,8 +165,8 @@ class QPMI2D():
             dy = ay*u*2 + by
         else: # else we are in the intermediate waypoints and we use membership functions to calc polynomials
             n = self.get_u_index(u)
-            ur = self.calculate_ur(u)
-            uf = self.calculate_uf(u)
+            mu_r = self.calculate_mu_r(u)
+            mu_f = self.calculate_mu_f(u)
             
             ax1 = self.x_params[n-1][0]
             ay1 = self.y_params[n-1][0]
@@ -180,8 +184,8 @@ class QPMI2D():
             dx2 = ax2*u*2 + bx2
             dy2 = ay2*u*2 + by2
 
-            dx = ur*dx2 + uf*dx1
-            dy = ur*dy2 + uf*dy1
+            dx = mu_r*dx2 + mu_f*dx1
+            dy = mu_r*dy2 + mu_f*dy1
         return np.array([dx, dy])
     
 
@@ -244,7 +248,7 @@ class QPMI2D():
         return self(self.length)
 
 
-    def plot_path(self, wps_on=True):
+    def mpl_plot_path(self, wps_on=True):
         '''
         Plot the path
         '''
@@ -264,15 +268,25 @@ class QPMI2D():
         plt.legend(fontsize=14)
 
         return plt
+    
+    def get_path_coord(self):
+        u = np.linspace(self.us[0], self.us[-1], 100)
+        quadratic_path = []
+        for du in u:
+            quadratic_path.append(self(du))
+            self.get_direction_angles(du)
+        quadratic_path = np.array(quadratic_path)
+        return quadratic_path
 
 
-def generate_random_waypoints_2d(nwaypoints, scen):
-    waypoints = [np.array([0, 0])]
+def generate_random_waypoints_2d(nwaypoints, distance, scen):
+    x1 = np.random.uniform(100, 180)
+    y1 = np.random.uniform(100, 180)
+    waypoints = [np.array([x1, y1])]
 
     if scen == '2d':
         for i in range(nwaypoints - 1):
-            distance = 50
-            azimuth = np.random.uniform(-np.pi / 4, np.pi / 4)
+            azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
             x = waypoints[i][0] + distance * np.cos(azimuth)
             y = waypoints[i][1] + distance * np.sin(azimuth)
             wp = np.array([x, y])
@@ -283,21 +297,25 @@ def generate_random_waypoints_2d(nwaypoints, scen):
 
 if __name__ == "__main__":
     # wps = np.array([np.array([0, 0]), np.array([20, 10]), np.array([50, 20]), np.array([80, 20]), np.array([90, 50]), np.array([80, 80]), np.array([50, 80]), np.array([20, 60]), np.array([20, 40]), np.array([0, 0])])
-    wps = generate_random_waypoints_2d(10, scen='2d')
+    wps = generate_random_waypoints_2d(10, 70, scen='2d')
     path = QPMI2D(wps)
 
-    point = path(20)
-    azi = path.get_direction_angles(20)
-    vec_x = point[0] + 20 * np.cos(azi)
-    vec_y = point[1] + 20 * np.sin(azi)
+    print(path.get_path_coord())
+    print(path.waypoints)
+    # point = path(20)
+    # azi = path.get_direction_angles(20)
+    # vec_x = point[0] + 20 * np.cos(azi)
+    # vec_y = point[1] + 20 * np.sin(azi)
 
-    plt.figure()
-    ax = path.plot_path()
-    plt.plot(wps[:, 0], wps[:, 1], linestyle="dashed", color="#33bb5c")
-    plt.scatter(*point, label="Current Position", color="b")
-    plt.quiver(*point, vec_x - point[0], vec_y - point[1], angles='xy', scale_units='xy', scale=1, color="g", label="Tangent Vector")
-    plt.legend(fontsize=14)
-    plt.xlabel(xlabel="X [m]", fontsize=14)
-    plt.ylabel(ylabel="Y [m]", fontsize=14)
-    plt.rc('lines', linewidth=3)
-    plt.show()
+    # plt.figure()
+    # ax = path.mpl_plot_path()
+
+    # # plt.plot(wps[:, 0], wps[:, 1], linestyle="dashed", color="#33bb5c")
+    # # plt.scatter(*point, label="Current Position", color="b")
+    # # plt.quiver(*point, vec_x - point[0], vec_y - point[1], angles='xy', scale_units='xy', scale=1, color="g", label="Tangent Vector")
+
+    # plt.legend(fontsize=14)
+    # plt.xlabel(xlabel="X [m]", fontsize=14)
+    # plt.ylabel(ylabel="Y [m]", fontsize=14)
+    # plt.rc('lines', linewidth=3)
+    # plt.show()

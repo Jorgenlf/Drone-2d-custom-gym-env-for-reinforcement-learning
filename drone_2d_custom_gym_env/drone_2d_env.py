@@ -1,6 +1,7 @@
 from Drone import *
 from obstacles import *
 from event_handler import *
+from predef_path import *
 
 import gym
 from gym import spaces
@@ -28,16 +29,27 @@ class Drone2dEnv(gym.Env):
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
                  n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True):
+        #Rendering booleans
         self.render_sim = render_sim
         self.render_path = render_path
         self.render_shade = render_shade
 
+        #Rendering initialization
         if self.render_sim is True:
             self.init_pygame()
             self.flight_path = []
             self.drop_path = []
             self.path_drone_shade = []
 
+        #Predefined path generation
+        self.wps = generate_random_waypoints_2d(10,80,'2d')
+        self.predef_path = QPMI2D(self.wps)
+        self.waypoint_index = 0
+        self.path_prog = []
+        self.passed_waypoints = np.zeros((1, 2), dtype=np.float32)
+
+        #Pymunk initialization
+        self.obstacles = []
         self.init_pymunk()
 
         #Parameters
@@ -57,8 +69,9 @@ class Drone2dEnv(gym.Env):
         self.right_force = -1
 
         #Generating target position
-        self.x_target = random.uniform(50, 750)
-        self.y_target = random.uniform(50, 750)
+        self.x_target = self.wps[1][0]
+        self.y_target = self.wps[1][1]
+        self.waypoint_index = 1
 
         #Defining spaces for action and observation  Think these go to the thrust directly.
         #Must discretize these to up down left right and hover iguess and send these signals to the controller to be implemented.
@@ -101,15 +114,40 @@ class Drone2dEnv(gym.Env):
             pymunk.pygame_util.positive_y_is_up = True
 
         #Generating drone's starting position
-        random_x = random.uniform(200, 600)
-        random_y = random.uniform(200, 600)
+        # random_x = random.uniform(200, 600)
+        # random_y = random.uniform(200, 600)
+        x1 = self.wps[0][0]
+        y1 = self.wps[0][1]
         angle_rand = random.uniform(-np.pi/4, np.pi/4)
-        self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+        self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
         self.drone_radius = self.drone.drone_radius
 
         #Generating obstacles
-        self.obstacle1 = Obstacle(200, 200, 120, 120, (188, 72, 72), self.space)
+        obstacle1 = Obstacle(200, 300, 20, 20, (188, 72, 72), self.space)
+        self.obstacles.append(obstacle1)
+        obstacle2 = Obstacle(600, 500, 20, 20, (188, 72, 72), self.space)
+        self.obstacles.append(obstacle2)
+        obstacle3 = Obstacle(400, 400, 20, 20, (188, 72, 72), self.space)
+        self.obstacles.append(obstacle3)
+
+    def penalize_obstacle_closeness(self):
+        #Temp functionality should look more into it. 
+        # Should update it to use the observation space
+        # Should also think about where to place the weighting of lambda_path_following as it could go here 
+        # Since one registers the closeness to the obstacle here.
+        reward_collision_avoidance = 0
+        for obstacle in self.obstacles:
+            distance = np.sqrt((self.drone.frame_shape.body.position[0]  - obstacle.x_pos)**2 + (self.drone.frame_shape.body.position[1] - obstacle.y_pos)**2)
+            if distance < 30:
+                reward_collision_avoidance += -1.0/(distance+0.1)
+        return reward_collision_avoidance
+    
+    def obstacle_wp_distance(self,wp_index):
+        for obstacle in self.obstacles:
+            distance = np.sqrt((self.wps[wp_index][0]  - obstacle.x_pos)**2 + (self.wps[wp_index][1] - obstacle.y_pos)**2)
+            if distance < self.drone_radius*2+5:
+                return True
 
     def step(self, action):
         if self.first_step is True:
@@ -140,23 +178,80 @@ class Drone2dEnv(gym.Env):
             if np.abs(self.shade_x-x) > self.drone_shade_distance or np.abs(self.shade_y-y) > self.drone_shade_distance:
                 self.add_drone_shade()
 
-        #Calulating reward function
-        obs = self.get_observation()
-        reward = (1.0/(np.abs(obs[4])+0.1)) + (1.0/(np.abs(obs[5])+0.1))
+        #Checking if Waypoint is passed
+        if self.predef_path:
+            self.prog = self.predef_path.get_closest_u(self.drone.frame_shape.body.position, self.waypoint_index)
+            self.path_prog.append(self.prog)
+            
+            k = self.predef_path.get_u_index(self.prog)
+            if k > self.waypoint_index:
+                print("Passed waypoint {:d}".format(k+1), self.predef_path.waypoints[k], "\tquad position:", self.drone.frame_shape.body.position)
+                self.passed_waypoints = np.vstack((self.passed_waypoints, self.predef_path.waypoints[k]))
+                # self.waypoint_index = k #Uncomment this and modify the move target to next waypoint if skippin wp should be allowed
 
-        #Stops episode, when drone is out of range or overlaps
+                #I rather think that the waypoint index should be updated in the move target to next waypoint function
+                #Check if the waypoint is too close to an obstacle and if so, skip it and go to the next one
+                #Use the size of the drone to decide if it is too close
+
+        obs = self.get_observation()
+
+        #Calulating reward for following the path
+        closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
+        dist_from_path = np.linalg.norm(closest_point - self.drone.frame_shape.body.position)
+        reward_path_following = np.clip(- np.log(dist_from_path), - np.inf, - np.log(0.1)) / (- np.log(0.1))
+
+        #Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
+        lambda_path_following = 1 
+
+        #Collision reward
+        self.reward_collision = 0
+        end_cond_1 = False
+        if self.space.collison:
+            self.reward_collision = -1000
+            end_cond_1 = True
+
+        #Collision avoidance reward
+        self.reward_collision_avoidance = self.penalize_obstacle_closeness()
+
+        #Move target to next waypoint
+        hit_waypoint_reward = 0
+        end_cond_2 = False
+        if np.abs(obs[4]) < 0.05 and np.abs(obs[5]) < 0.05 and self.waypoint_index < len(self.wps)-1:
+            self.x_target = self.wps[self.waypoint_index+1][0]
+            self.y_target = self.wps[self.waypoint_index+1][1]
+            self.waypoint_index += 1
+            hit_waypoint_reward = 4
+        #Checking if the next waypoint is too close to an obstacle Might need more work hmmm
+        elif self.waypoint_index <len(self.wps)-1 and self.obstacle_wp_distance(self.waypoint_index+1):
+            self.x_target = self.wps[self.waypoint_index+2][0]
+            self.y_target = self.wps[self.waypoint_index+2][1]
+            self.waypoint_index += 2
+            print("Waypoint too close to obstacle, skipping to next one")
+        #Reaching the final waypoint
+        elif np.abs(obs[4]) < 0.05 and np.abs(obs[5]) < 0.05 and self.waypoint_index == len(self.wps)-1:
+            end_cond_2 = True
+            #Give reward for this?
+
+        #Stops episode, when drone is out of range or alpha angle too aggressive
+        end_cond_3 = False
         if np.abs(obs[3])==1 or np.abs(obs[6])==1 or np.abs(obs[7])==1:
-            self.done = True
-            reward = -10
+            end_cond_3 = True
+            reward = -10 #What about this reward incorporate it into the reward function?
 
         #Stops episode, when time is up
+        end_cond_4 = False
         if self.current_time_step == self.max_time_steps:
-            self.done = True
+            end_cond_4 = True
 
-        #Stops episode, if collision occurs
-        if self.space.collison is True:
+        reward = (1.0/(np.abs(obs[4])+0.1)) + (1.0/(np.abs(obs[5])+0.1)) + hit_waypoint_reward + reward_path_following*lambda_path_following + self.reward_collision + self.reward_collision_avoidance
+        # print(reward)
+
+        if end_cond_1 or end_cond_2 or end_cond_3 or end_cond_4:
             self.done = True
-            reward = -10
+            if end_cond_1: print("Collision")
+            if end_cond_2: print("Reached final waypoint")
+            if end_cond_3: print("Out of range or too aggressive alpha angle")
+            if end_cond_4: print("Time is up")
 
         return obs, reward, self.done, self.info
 
@@ -198,6 +293,15 @@ class Drone2dEnv(gym.Env):
         pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, 800, 800), 8)
         pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, 700, 700), 4)
         pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(200, 200, 400, 400), 4)
+
+        #Drawing predefined path
+        predef_path_coords = self.predef_path.get_path_coord()
+        predef_path_coords = [(x, 800-y) for x, y in predef_path_coords]
+        pygame.draw.aalines(self.screen, (0, 0, 0), False, predef_path_coords)
+
+        #Drawing waypoints
+        for wp in self.wps:
+            pygame.draw.circle(self.screen, (0, 0, 0), (wp[0], 800-wp[1]), 5)
 
         #Drawing drone's shade
         if len(self.path_drone_shade):
@@ -247,7 +351,7 @@ class Drone2dEnv(gym.Env):
     def initial_movement(self):
         if self.initial_throw is True:
             throw_angle = random.random() * 2*np.pi
-            throw_force = random.uniform(0, 25000)
+            throw_force = random.uniform(0, 1500)
             throw = Vec2d(np.cos(throw_angle)*throw_force, np.sin(throw_angle)*throw_force)
 
             self.drone.frame_shape.body.apply_force_at_world_point(throw, self.drone.frame_shape.body.position)

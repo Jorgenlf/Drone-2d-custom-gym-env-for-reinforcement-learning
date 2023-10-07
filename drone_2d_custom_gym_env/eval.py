@@ -21,10 +21,10 @@ random_action = False #if True, the agent will take actions randomly
 render_sim = True #if True, a graphic is generated
 
 env = gym.make('drone-2d-custom-v0', render_sim=render_sim, render_path=True, render_shade=True,
-            shade_distance=70, n_steps=500, n_fall_steps=10, change_target=True, initial_throw=True)
+            shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
 
 
-model = PPO.load("./ppo_agents/ppo_agent.zip" ,env) #ppo_agent.zip works nicely
+model = PPO.load('Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\ppo_agent.zip' ,env) #ppo_agent.zip works nicely 
 
 random_seed = int(time.time())
 model.set_random_seed(random_seed)
