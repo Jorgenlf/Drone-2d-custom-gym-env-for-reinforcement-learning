@@ -1,6 +1,7 @@
 import pymunk
 import pymunk.pygame_util
 import pygame
+import numpy as np
 
 #File contaning the class for the obstacles in the environment 
 class Obstacle():
@@ -12,6 +13,8 @@ class Obstacle():
         self.height = height
         self.x_pos = x
         self.y_pos = y
+        self.diagonal = np.sqrt(width**2 - height**2) 
+
 
         #body
         obstacle_body = pymunk.Body(body_type=pymunk.Body.STATIC)
@@ -32,13 +35,19 @@ class Obstacle():
     def shape(self):
         return self.width, self.height
         
-    def get_color(self):
-        return self.color
     
 
-def generate_obstacles(space):
-    #TODO
-    pass
+def generate_obstacles(n,space):
+    obstacles = []
+    color = (188, 72, 72)
+    for _ in range(n):
+        random_size = np.random.randint(10, 80)
+        random_x = np.random.randint(200, 600)
+        random_y = np.random.randint(200, 600)
+        obstacle = Obstacle(random_x, random_y, random_size, random_size, color, space)
+        obstacles.append(obstacle)    
+
+    return obstacles
 
 #RAther make a superclass obstacle and then make a subclass for each shape #TODO
 

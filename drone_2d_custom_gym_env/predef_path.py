@@ -279,17 +279,29 @@ class QPMI2D():
         return quadratic_path
 
 
-def generate_random_waypoints_2d(nwaypoints, distance, scen):
+def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles,drone_radius):
     x1 = np.random.uniform(100, 180)
     y1 = np.random.uniform(100, 180)
     waypoints = [np.array([x1, y1])]
 
     if scen == '2d':
         for i in range(nwaypoints - 1):
-            azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
-            x = waypoints[i][0] + distance * np.cos(azimuth)
-            y = waypoints[i][1] + distance * np.sin(azimuth)
-            wp = np.array([x, y])
+            too_close = True
+            while too_close:
+                azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
+                x = waypoints[i][0] + distance * np.cos(azimuth)
+                y = waypoints[i][1] + distance * np.sin(azimuth)
+                wp = np.array([x, y])
+                #Check if wp too close to any obstacles
+                one_too_close = False
+                for obs in obstacles:
+                    obs_vec = np.array([obs.x_pos, obs.y_pos])
+                    if np.linalg.norm(wp - obs_vec) < 2 * drone_radius + 2*obs.diagonal:
+                        one_too_close = True
+                if one_too_close:
+                    continue
+                else:
+                    too_close = False
             waypoints.append(wp)
 
     return np.array(waypoints)
