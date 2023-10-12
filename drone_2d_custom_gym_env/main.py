@@ -56,10 +56,13 @@ register(
             'initial_throw': True}
 )
 
+#---------------------------------#
 
-mode = "train"
-continuous_mode = True #if True, after completing one episode the next one will start automatically
-                        #Relevant for eval mode
+mode = "debug" #debug, train, eval
+continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
+
+#---------------------------------#
+
 if mode == "debug":
     # Inspect and environment manually
     env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
