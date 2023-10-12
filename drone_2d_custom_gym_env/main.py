@@ -58,7 +58,10 @@ register(
 
 #---------------------------------#
 
-mode = "debug" #debug, train, eval
+# mode = "debug" #debug, train, eval
+
+mode = "eval"
+agent_path = 'Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 
 #---------------------------------#
@@ -80,10 +83,10 @@ elif mode == "train":
     # num_cpu = 4
     # env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
-    # Init callbacks #TODO make tensorboard work and make a smart folder structure
+    # Init callbacks #TODO make a smart folder structure
     tensorboard_logger = TensorboardLogger()
     checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
-                                            save_path="logs/",
+                                            save_path="./logs/",
                                             name_prefix="rl_model",
                                             verbose=True)
     # List of callbacks to be called
@@ -99,7 +102,7 @@ elif mode == "eval":
     env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
                 shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
 
-    model = PPO.load('ppo_agents\ppo_agent.zip' ,env) #ppo_agent.zip works nicely 
+    model = PPO.load(agent_path,env)
 
     random_seed = int(time.time())
     model.set_random_seed(random_seed)

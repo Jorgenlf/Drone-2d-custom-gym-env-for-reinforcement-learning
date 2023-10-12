@@ -135,17 +135,6 @@ class Drone2dEnv(gym.Env):
         obstacle3 = Obstacle(400, 400, 20, 20, (188, 72, 72), self.space)
         self.obstacles.append(obstacle3)
 
-    def penalize_obstacle_closeness(self,velocity_angle,closest_obs_angle):
-        #Temp functionality should look more into it. 
-        # Should also think about where to place the weighting of lambda_path_following as it could go here 
-        # Since one registers the closeness to the obstacle here.
-        reward_collision_avoidance = 0
-        for obstacle in self.obstacles:
-            distance = np.sqrt((self.drone.frame_shape.body.position[0]  - obstacle.x_pos)**2 + (self.drone.frame_shape.body.position[1] - obstacle.y_pos)**2)
-            if distance < 30 and velocity_angle - closest_obs_angle < 0.1:
-                reward_collision_avoidance += -1.0/(distance+0.1)
-        return reward_collision_avoidance
-
     # def PID_controller(self):
     #     '''PID controller for stabilizing the drone'''
     #     alpha_ref = 0
@@ -198,8 +187,8 @@ class Drone2dEnv(gym.Env):
         drone_vel_y = obs[1]
         drone_omega = obs[2]
         drone_alpha = obs[3]
-        drone_dist_x = obs[4]
-        drone_dist_y = obs[5]
+        target_dist_x = obs[4]
+        target_dist_y = obs[5]
         drone_pos_x = obs[6]
         drone_pos_y = obs[7]
         drone_closest_obs_dist = obs[8]
@@ -209,7 +198,9 @@ class Drone2dEnv(gym.Env):
         #Calulating reward for following the path #Make this part of the observation? Naah its inside the drone and not irl
         closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
         dist_from_path = np.linalg.norm(closest_point - self.drone.frame_shape.body.position)
-        reward_path_following = np.clip(- np.log(dist_from_path), - np.inf, - np.log(0.1)) / (- np.log(0.1))
+        reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(10)) / (- np.log(10)) 
+        # print('\nreward_path_following', reward_path_following)
+
 
         #TODO Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
         lambda_path_following = 1 
@@ -221,34 +212,52 @@ class Drone2dEnv(gym.Env):
             reward_collision = -10
             end_cond_1 = True
 
-        #Collision avoidance reward
-        reward_collision_avoidance = self.penalize_obstacle_closeness(drone_vel_angle,drone_closest_obs_angle)
+        #Collision avoidance reward #TODO Check for a better way to do this
+        sensor_range = 100
+        reward_collision_avoidance = 0
+        for obstacle in self.obstacles:
+            distance = np.sqrt((self.drone.frame_shape.body.position[0]  - obstacle.x_pos)**2 + (self.drone.frame_shape.body.position[1] - obstacle.y_pos)**2)
+            if distance < sensor_range: #and drone_vel_angle - drone_closest_obs_angle < 0.5:
+                reward_collision_avoidance += -100.0/(distance+0.1)
+        # print('\nreward_collision_avoidance', reward_collision_avoidance)
+        # print('\nVelAngle',np.degrees((np.pi/2)*drone_vel_angle))
+        # print('\nObsAngle',np.degrees((np.pi/2)*drone_closest_obs_angle)) #TODO encoroporate these angles to determine if the drone is going towards the obstacle or away from it
 
         #Move target to next waypoint
-        hit_waypoint_reward = 0
+        reach_end_reward = 0
         end_cond_2 = False
-        if np.abs(drone_dist_x) < 0.05 and np.abs(drone_dist_y) < 0.05 and self.waypoint_index < len(self.wps)-1:
+        if np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index < len(self.wps)-1:
             self.x_target = self.wps[self.waypoint_index+1][0]
             self.y_target = self.wps[self.waypoint_index+1][1]
             self.waypoint_index += 1
-            hit_waypoint_reward = 4
-        elif np.abs(drone_dist_x) < 0.05 and np.abs(drone_dist_y) < 0.05 and self.waypoint_index == len(self.wps)-1:
+        elif np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index == len(self.wps)-1:
             end_cond_2 = True
+            reach_end_reward = 10
             #Give reward for this? #TODO
 
         #Stops episode, when drone is out of range or alpha angle too aggressive
         end_cond_3 = False
-        if np.abs(obs[3])==1 or np.abs(obs[6])==1 or np.abs(obs[7])==1:
+        OOB_or_too_aggressive_alpha_reward = 0
+        if np.abs(drone_alpha)==1 or np.abs(drone_pos_x)==1 or np.abs(drone_pos_y)==1:
             end_cond_3 = True
-            reward = -10 #What about this reward incorporate it into the reward function?
+            OOB_or_too_aggressive_alpha_reward = -5 #TODO What about this reward incorporate it into the reward function?
 
         #Stops episode, when time is up
         end_cond_4 = False
         if self.current_time_step == self.max_time_steps:
             end_cond_4 = True
 
-        reward = (1.0/(np.abs(obs[4])+0.1)) + (1.0/(np.abs(obs[5])+0.1)) + hit_waypoint_reward + reward_path_following*lambda_path_following + reward_collision + reward_collision_avoidance
+        #Reward close too target
+        reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(10)) / (- np.log(10)) 
+
+        reward_close_to_target = np.clip(np.log(abs(target_dist_x)+0.1), - np.inf, np.log(10)) / (- np.log(10)) + np.clip(np.log(abs(target_dist_y)+0.1), - np.inf, np.log(10)) / (- np.log(10))
+        #TODO make something more understanmdable than this^
+        #OLD(1.0/(np.abs(target_dist_x)+0.1)) + (1.0/(np.abs(target_dist_y)+0.1)) 
+        # print('\nreward_close_to_target', reward_close_to_target)
+
+        reward = OOB_or_too_aggressive_alpha_reward + reward_close_to_target + reward_path_following*lambda_path_following + reward_collision + reward_collision_avoidance + reach_end_reward
         # print(reward)
+
         self.info['reward'] = reward
         self.info['env_steps'] = self.current_time_step
 
