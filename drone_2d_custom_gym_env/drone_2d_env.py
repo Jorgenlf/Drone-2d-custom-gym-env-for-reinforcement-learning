@@ -251,7 +251,7 @@ class Drone2dEnv(gym.Env):
         reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(10)) / (- np.log(10)) 
 
         reward_close_to_target = np.clip(np.log(abs(target_dist_x)+0.1), - np.inf, np.log(10)) / (- np.log(10)) + np.clip(np.log(abs(target_dist_y)+0.1), - np.inf, np.log(10)) / (- np.log(10))
-        #TODO make something more understanmdable than this^
+        #TODO make something more understandable than this^
         #OLD(1.0/(np.abs(target_dist_x)+0.1)) + (1.0/(np.abs(target_dist_y)+0.1)) 
         # print('\nreward_close_to_target', reward_close_to_target)
 

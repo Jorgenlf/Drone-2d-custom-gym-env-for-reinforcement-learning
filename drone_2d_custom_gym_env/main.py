@@ -61,7 +61,7 @@ register(
 # mode = "debug" #debug, train, eval
 
 mode = "eval"
-agent_path = 'Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11.zip' 
+agent_path = 'Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11_2.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 
 #---------------------------------#
