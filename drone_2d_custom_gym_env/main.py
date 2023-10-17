@@ -58,16 +58,16 @@ register(
 
 #---------------------------------#
 
-# mode = "debug" #debug, train, eval
+mode = "debug" #debug, train, eval
 
-mode = "eval"
-agent_path = 'Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11_2.zip' 
+# mode = "eval"
+agent_path = 'C:\CodeThatsSusceptibleToOneDrive\Specialization project\Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11_2.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 
 #---------------------------------#
 
 if mode == "debug":
-    # Inspect and environment manually
+    # Inspect an environment manually
     env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
             shade_distance=70, n_steps=900, n_fall_steps=0, change_target=True, initial_throw=False)
 
@@ -79,7 +79,7 @@ elif mode == "train":
                 shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
     num_cpu = 1
 
-    # Multi-Threading
+    # Multi-Threading 
     # num_cpu = 4
     # env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 

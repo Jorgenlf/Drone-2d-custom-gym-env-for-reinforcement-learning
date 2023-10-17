@@ -36,6 +36,8 @@ class Drone2dEnv(gym.Env):
 
         #Rendering initialization
         if self.render_sim is True:
+            self.screen_width = 1000
+            self.screen_height = 800
             self.init_pygame()
             self.flight_path = []
             self.drop_path = []
@@ -47,7 +49,7 @@ class Drone2dEnv(gym.Env):
 
         #Predefined path generation
         self.wps = []
-        self.wps = generate_random_waypoints_2d(5,150,'2d',self.obstacles,self.drone_radius)
+        self.wps = generate_random_waypoints_2d(8,110,'2d')
         self.predef_path = QPMI2D(self.wps)
         self.waypoint_index = 0
         #Related to the skipping of waypoints which is per now unused
@@ -78,13 +80,13 @@ class Drone2dEnv(gym.Env):
         max_action = np.array([1, 1], dtype=np.float32)
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
 
-        min_observation = np.array([-1, -1, -1, -1, -1, -1, -1, -1,-1,-1,-1], dtype=np.float32)
-        max_observation = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32)
+        min_observation = np.array([-1, -1, -1, -1, -1, -1, -1, -1,-1,-1,-1,-1,-1], dtype=np.float32)
+        max_observation = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32)
         self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
     def init_pygame(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((800, 800))
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Drone2d Environment")
         self.clock = pygame.time.Clock()
 
@@ -126,13 +128,20 @@ class Drone2dEnv(gym.Env):
         #Randomly generated obstacles
         # self.obstacles = generate_obstacles(4, self.space) #TODO ensure its not buggy
         #TODO maybe add obstacle on path
-
+        c = (188, 72, 72)
         #Hardcoded for testing purposes
-        obstacle1 = Obstacle(200, 300, 20, 20, (188, 72, 72), self.space)
+        # obstacle1 = Square(200,300,20,c,self.space)
+        # self.obstacles.append(obstacle1)
+        # obstacle2 = Square(600,500,20,c,self.space)
+        # self.obstacles.append(obstacle2)
+        # obstacle3 = Square(400,400,20,c,self.space)
+        # self.obstacles.append(obstacle3)
+
+        obstacle1 = Circle(200,300,20,c,self.space)
         self.obstacles.append(obstacle1)
-        obstacle2 = Obstacle(600, 500, 20, 20, (188, 72, 72), self.space)
+        obstacle2 = Circle(600,500,20,c,self.space)
         self.obstacles.append(obstacle2)
-        obstacle3 = Obstacle(400, 400, 20, 20, (188, 72, 72), self.space)
+        obstacle3 = Circle(400,400,20,c,self.space)
         self.obstacles.append(obstacle3)
 
     # def PID_controller(self):
@@ -194,16 +203,18 @@ class Drone2dEnv(gym.Env):
         drone_closest_obs_dist = obs[8]
         drone_closest_obs_angle = obs[9]
         drone_vel_angle = obs[10]
+        closest_point_x = obs[11]
+        closest_point_y = obs[12]
+        closest_point = np.array([closest_point_x*0.5*self.screen_width + self.screen_width/2, closest_point_y*0.5*self.screen_height +self.screen_height/2])
 
-        #Calulating reward for following the path #Make this part of the observation? Naah its inside the drone and not irl
-        closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
         dist_from_path = np.linalg.norm(closest_point - self.drone.frame_shape.body.position)
         reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(10)) / (- np.log(10)) 
         # print('\nreward_path_following', reward_path_following)
 
 
         #TODO Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
-        lambda_path_following = 1 
+        lambda_PF = 1 
+        lambda_CA = 1-lambda_PF
 
         #Collision reward
         reward_collision = 0
@@ -252,13 +263,16 @@ class Drone2dEnv(gym.Env):
 
         reward_close_to_target = np.clip(np.log(abs(target_dist_x)+0.1), - np.inf, np.log(10)) / (- np.log(10)) + np.clip(np.log(abs(target_dist_y)+0.1), - np.inf, np.log(10)) / (- np.log(10))
         #TODO make something more understandable than this^
+
         #OLD(1.0/(np.abs(target_dist_x)+0.1)) + (1.0/(np.abs(target_dist_y)+0.1)) 
         # print('\nreward_close_to_target', reward_close_to_target)
 
-        reward = OOB_or_too_aggressive_alpha_reward + reward_close_to_target + reward_path_following*lambda_path_following + reward_collision + reward_collision_avoidance + reach_end_reward
+        reward = OOB_or_too_aggressive_alpha_reward + reward_close_to_target + reward_path_following*lambda_PF + reward_collision + reward_collision_avoidance*lambda_CA + reach_end_reward
         # print(reward)
 
         self.info['reward'] = reward
+        self.info['collision_avoidance_reward'] = reward_collision_avoidance 
+        self.info['path_following_reward'] = reward_path_following
         self.info['env_steps'] = self.current_time_step
 
         if end_cond_1 or end_cond_2 or end_cond_3 or end_cond_4:
@@ -269,6 +283,19 @@ class Drone2dEnv(gym.Env):
             if end_cond_4: print("Time is up")
 
         return obs, reward, self.done, self.info
+
+    #Per now unused but will later be called in get_observation to get the distance to the k nearest obstacles
+    # def get_obstacle_distances(self,k):
+    #     x, y = self.drone.frame_shape.body.position
+    #     obstacle_distances = []
+    #     for obstacle in self.obstacles:
+    #         distance = np.sqrt((x - obstacle.x_pos)**2 + (y - obstacle.y_pos)**2)
+    #         obstacle_distances.append(distance)
+
+    #     obstacle_distances.sort()
+    #     obstacle_distances = obstacle_distances[:k]
+    #     return obstacle_distances
+        
 
     def get_observation(self):
         # Drone velocities
@@ -291,17 +318,17 @@ class Drone2dEnv(gym.Env):
             distance_x = np.clip((x/self.x_target) - 1, -1, 0)
 
         else:
-            distance_x = np.clip((-x/(self.x_target-800) + self.x_target/(self.x_target-800)) , 0, 1)
+            distance_x = np.clip((-x/(self.x_target-self.screen_width) + self.x_target/(self.x_target-self.screen_width)) , 0, 1)
 
         if y < self.y_target:
             distance_y = np.clip((y/self.y_target) - 1, -1, 0)
 
         else:
-            distance_y = np.clip((-y/(self.y_target-800) + self.y_target/(self.y_target-800)) , 0, 1)
+            distance_y = np.clip((-y/(self.y_target-self.screen_height) + self.y_target/(self.y_target-self.screen_height)) , 0, 1)
         
         #Position of drone
-        pos_x = np.clip(x/400.0 - 1, -1, 1)
-        pos_y = np.clip(y/400.0 - 1, -1, 1)
+        pos_x = np.clip(2.0*x/self.screen_width - 1, -1, 1)
+        pos_y = np.clip(2.0*y/self.screen_height - 1, -1, 1)
 
         #Distance to closest obstacle
         closest_distance = 1000
@@ -310,6 +337,7 @@ class Drone2dEnv(gym.Env):
             if distance < closest_distance:
                 closest_distance = distance
                 closest_obs_index = i
+
         closest_distance = np.clip((closest_distance/400.0) - 1, -1, 1)
 
         #Angle between drone and closest obstacle
@@ -320,31 +348,37 @@ class Drone2dEnv(gym.Env):
         velocity_angle = np.arctan2(velocity_y, velocity_x)
         velocity_angle = np.clip(velocity_angle/(np.pi/2), -1, 1)
 
-        return np.array([velocity_x, velocity_y, omega, alpha, distance_x, distance_y, pos_x, pos_y,closest_distance,closest_obs_angle,velocity_angle])
+        closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
+        closest_point_x = closest_point[0]
+        closest_point_y = closest_point[1]
+        closest_point_x = np.clip(closest_point_x*2.0/self.screen_width - 1, -1, 1)
+        closest_point_y = np.clip(closest_point_y*2.0/self.screen_height - 1, -1, 1)
+
+        return np.array([velocity_x, velocity_y, omega, alpha, distance_x, distance_y, pos_x, pos_y,closest_distance,closest_obs_angle,velocity_angle,closest_point_x,closest_point_y])
 
     def render(self, mode='human', close=False):
         if self.render_sim is False: return
 
         pygame_events(self.space, self, self.change_target)
         self.screen.fill((243, 243, 243))
-        pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, 800, 800), 8)
-        pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, 700, 700), 4)
-        pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(200, 200, 400, 400), 4)
+        pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, self.screen_width, self.screen_height), 8)
+        pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, self.screen_width-100, self.screen_height-100), 4)
+        pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(self.screen_width/4, self.screen_height/4, self.screen_width/2, self.screen_height/2), 4)
 
         #Drawing predefined path
         predef_path_coords = self.predef_path.get_path_coord()
-        predef_path_coords = [(x, 800-y) for x, y in predef_path_coords]
+        predef_path_coords = [(x, self.screen_height-y) for x, y in predef_path_coords]
         pygame.draw.aalines(self.screen, (0, 0, 0), False, predef_path_coords)
 
         #Drawing waypoints
         for wp in self.wps:
-            pygame.draw.circle(self.screen, (0, 0, 0), (wp[0], 800-wp[1]), 5)
+            pygame.draw.circle(self.screen, (0, 0, 0), (wp[0], self.screen_height-wp[1]), 5)
 
         #Drawing drone's shade
         if len(self.path_drone_shade):
             for shade in self.path_drone_shade:
                 image_rect_rotated = pygame.transform.rotate(self.shade_image, shade[2]*180.0/np.pi)
-                shade_image_rect = image_rect_rotated.get_rect(center=(shade[0], 800-shade[1]))
+                shade_image_rect = image_rect_rotated.get_rect(center=(shade[0], self.screen_height-shade[1]))
                 self.screen.blit(image_rect_rotated, shade_image_rect)
 
         self.space.debug_draw(self.draw_options) #Draws obstacles as theyre part of the space from pymunk
@@ -353,19 +387,19 @@ class Drone2dEnv(gym.Env):
         vector_scale = 0.05
         l_x_1, l_y_1 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, 0))
         l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.froce_scale*vector_scale))
-        pygame.draw.line(self.screen, (179,179,179), (l_x_1, 800-l_y_1), (l_x_2, 800-l_y_2), 4)
+        pygame.draw.line(self.screen, (179,179,179), (l_x_1, self.screen_height-l_y_1), (l_x_2, self.screen_height-l_y_2), 4)
 
         l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.left_force*vector_scale))
-        pygame.draw.line(self.screen, (255,0,0), (l_x_1, 800-l_y_1), (l_x_2, 800-l_y_2), 4)
+        pygame.draw.line(self.screen, (255,0,0), (l_x_1, self.screen_height-l_y_1), (l_x_2, self.screen_height-l_y_2), 4)
 
         r_x_1, r_y_1 = self.drone.frame_shape.body.local_to_world((self.drone_radius, 0))
         r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.froce_scale*vector_scale))
-        pygame.draw.line(self.screen, (179,179,179), (r_x_1, 800-r_y_1), (r_x_2, 800-r_y_2), 4)
+        pygame.draw.line(self.screen, (179,179,179), (r_x_1, self.screen_height-r_y_1), (r_x_2, self.screen_height-r_y_2), 4)
 
         r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.right_force*vector_scale))
-        pygame.draw.line(self.screen, (255,0,0), (r_x_1, 800-r_y_1), (r_x_2, 800-r_y_2), 4)
+        pygame.draw.line(self.screen, (255,0,0), (r_x_1, self.screen_height-r_y_1), (r_x_2, self.screen_height-r_y_2), 4)
 
-        pygame.draw.circle(self.screen, (255, 0, 0), (self.x_target, 800-self.y_target), 5)
+        pygame.draw.circle(self.screen, (255, 0, 0), (self.x_target, self.screen_height-self.y_target), 5)
 
         #Drawing drone's path
         if len(self.flight_path) > 2:
@@ -418,11 +452,11 @@ class Drone2dEnv(gym.Env):
 
     def add_postion_to_drop_path(self):
         x, y = self.drone.frame_shape.body.position
-        self.drop_path.append((x, 800-y))
+        self.drop_path.append((x, self.screen_height-y))
 
     def add_postion_to_flight_path(self):
         x, y = self.drone.frame_shape.body.position
-        self.flight_path.append((x, 800-y))
+        self.flight_path.append((x, self.screen_height-y))
 
     def add_drone_shade(self):
         """
