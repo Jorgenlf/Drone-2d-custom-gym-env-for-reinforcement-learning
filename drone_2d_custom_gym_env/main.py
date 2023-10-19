@@ -28,14 +28,20 @@ def _manual_control(env):
                     if event.key == pygame.K_LEFT:
                         input = [0,1]
 
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_RIGHT:
+                        input = [0,0]  
+                    if event.key == pygame.K_LEFT:
+                        input = [0,0]  
+
                     if event.key == pygame.K_ESCAPE:
                         env.close()
                         return
 
-                    obs, rew, done, info = env.step(action=input)
-                    if done:
-                        done = False
-                        env.reset()
+                obs, rew, done, info = env.step(action=input)
+                if done:
+                    done = False
+                    env.reset()
 
                 if event.type == pygame.QUIT:
                     print("Pygame window closed, exiting")

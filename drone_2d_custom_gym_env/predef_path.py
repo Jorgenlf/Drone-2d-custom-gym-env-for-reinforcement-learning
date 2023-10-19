@@ -227,8 +227,12 @@ class QPMI2D():
         '''
         Calculate the parameter u of the path that is closest to the given position
         '''
-        x1 = self.us[wp_idx] - margin
-        x2 = self.us[wp_idx+1] + margin if wp_idx < len(self.us) - 2 else self.length
+        if wp_idx == 0:
+            x1 = 0.0
+            x2 = 0.0
+        else:
+            x1 = self.us[wp_idx-1] - margin 
+            x2 = self.us[wp_idx] + margin #if wp_idx < len(self.us) - 2 else self.length
         output = fminbound(lambda u: np.linalg.norm(self(u) - position), 
                         full_output=0, x1=x1, x2=x2, xtol=1e-6, maxfun=500)
         return output

@@ -46,12 +46,9 @@ class Drone2dEnv(gym.Env):
 
         #Predefined path generation
         self.wps = []
-        self.wps = generate_random_waypoints_2d(8,110,'2d')
+        self.wps = generate_random_waypoints_2d(8,120,'2d')
         self.predef_path = QPMI2D(self.wps)
         self.waypoint_index = 0
-        #Related to the skipping of waypoints which is per now unused
-        # self.path_prog = []
-        # self.passed_waypoints = np.zeros((1, 2), dtype=np.float32)
 
         #Pymunk initialization
         self.obstacles = []
@@ -116,12 +113,12 @@ class Drone2dEnv(gym.Env):
             pymunk.pygame_util.positive_y_is_up = True
 
         #Generating drone's starting position
-        random_x = random.uniform(100, 200)
-        random_y = random.uniform(100, 200)
-        # x1 = self.wps[0][0]
-        # y1 = self.wps[0][1]
+        # random_x = random.uniform(100, 200)
+        # random_y = random.uniform(100, 200)
+        x1 = self.wps[0][0]
+        y1 = self.wps[0][1]
         angle_rand = random.uniform(-np.pi/4, np.pi/4)
-        self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+        self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
         self.drone_radius = self.drone.drone_radius
 
@@ -132,7 +129,7 @@ class Drone2dEnv(gym.Env):
         
         #Hardcoded for testing purposes
         c = (188, 72, 72)
-        # obstacle1 = Square(200,300,20,c,self.space)
+        obstacle1 = Square(0,0,20,c,self.space)
         # self.obstacles.append(obstacle1)
         # obstacle2 = Square(600,500,20,c,self.space)
         # self.obstacles.append(obstacle2)
@@ -193,8 +190,9 @@ class Drone2dEnv(gym.Env):
         closest_point = np.array([closest_point_x*0.5*self.screen_width + self.screen_width/2, closest_point_y*0.5*self.screen_height +self.screen_height/2])
 
         dist_from_path = np.linalg.norm(closest_point - self.drone.frame_shape.body.position)
-        reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(10)) / (- np.log(10)) 
-        # print('\nreward_path_following', reward_path_following)
+        reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(50)) / (- np.log(50)) #Wehther 10 or more pixels away from path, reward is -1
+        print('\ndist_from_path', dist_from_path)
+        print('\nreward_path_following', reward_path_following)
 
 
         #TODO Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
@@ -231,12 +229,12 @@ class Drone2dEnv(gym.Env):
             reach_end_reward = 10
             #Give reward for this? #TODO
 
-        #Stops episode, when drone is out of range or alpha angle too aggressive
+        #Stops episode, when drone is out of frame or alpha angle too aggressive
         end_cond_3 = False
         OOB_or_too_aggressive_alpha_reward = 0
         if np.abs(drone_alpha)==1 or np.abs(drone_pos_x)==1 or np.abs(drone_pos_y)==1:
             end_cond_3 = True
-            OOB_or_too_aggressive_alpha_reward = -5 #TODO What about this reward incorporate it into the reward function?
+            OOB_or_too_aggressive_alpha_reward = -5
 
         #Stops episode, when time is up
         end_cond_4 = False
@@ -316,7 +314,7 @@ class Drone2dEnv(gym.Env):
         pos_y = np.clip(2.0*y/self.screen_height - 1, -1, 1)
 
         #Distance to closest obstacle
-        closest_distance = 1000
+        closest_distance = 100000
         for i, obstacle in enumerate(self.obstacles):
             distance = np.sqrt((x - obstacle.x_pos)**2 + (y - obstacle.y_pos)**2)
             if distance < closest_distance:
@@ -358,6 +356,11 @@ class Drone2dEnv(gym.Env):
         #Drawing waypoints
         for wp in self.wps:
             pygame.draw.circle(self.screen, (0, 0, 0), (wp[0], self.screen_height-wp[1]), 5)
+        
+        #Drawing closest point on path
+        closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
+        closest_point = (closest_point[0], self.screen_height-closest_point[1])
+        pygame.draw.circle(self.screen, (0, 0, 255), closest_point, 5)
 
         #Drawing drone's shade
         if len(self.path_drone_shade):
