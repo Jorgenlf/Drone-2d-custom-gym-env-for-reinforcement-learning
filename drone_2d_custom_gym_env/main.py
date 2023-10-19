@@ -86,13 +86,13 @@ elif mode == "train":
     # Init callbacks #TODO make a smart folder structure
     tensorboard_logger = TensorboardLogger()
     checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
-                                            save_path="./logs/",
+                                            save_path="/logs/",
                                             name_prefix="rl_model",
                                             verbose=True)
     # List of callbacks to be called
     callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-    model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="./logs/")
+    model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="/logs/")
 
     model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
     model.save('new_agent')
@@ -141,4 +141,4 @@ else:
 ⠀⠀⠀⠀⠀⠀⣀⣀⣈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀ 
 ⠀⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀ 
 ⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠿⠛⠉""")
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠿⠛⠉""") #To make it obvious that the input is invalid may remove later

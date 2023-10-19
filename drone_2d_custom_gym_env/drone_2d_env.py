@@ -43,9 +43,6 @@ class Drone2dEnv(gym.Env):
             self.drop_path = []
             self.path_drone_shade = []
 
-        #Pymunk initialization
-        self.obstacles = []
-        self.init_pymunk()
 
         #Predefined path generation
         self.wps = []
@@ -55,6 +52,10 @@ class Drone2dEnv(gym.Env):
         #Related to the skipping of waypoints which is per now unused
         # self.path_prog = []
         # self.passed_waypoints = np.zeros((1, 2), dtype=np.float32)
+
+        #Pymunk initialization
+        self.obstacles = []
+        self.init_pymunk()
 
         #Parameters
         self.max_time_steps = n_steps
@@ -126,10 +127,11 @@ class Drone2dEnv(gym.Env):
 
         #Generating obstacles
         #Randomly generated obstacles
-        # self.obstacles = generate_obstacles(4, self.space) #TODO ensure its not buggy
+        self.obstacles = generate_obstacles_around_path(5, self.space, self.predef_path, 0, 150)
         #TODO maybe add obstacle on path
-        c = (188, 72, 72)
+        
         #Hardcoded for testing purposes
+        c = (188, 72, 72)
         # obstacle1 = Square(200,300,20,c,self.space)
         # self.obstacles.append(obstacle1)
         # obstacle2 = Square(600,500,20,c,self.space)
@@ -137,18 +139,12 @@ class Drone2dEnv(gym.Env):
         # obstacle3 = Square(400,400,20,c,self.space)
         # self.obstacles.append(obstacle3)
 
-        obstacle1 = Circle(200,300,20,c,self.space)
-        self.obstacles.append(obstacle1)
-        obstacle2 = Circle(600,500,20,c,self.space)
-        self.obstacles.append(obstacle2)
-        obstacle3 = Circle(400,400,20,c,self.space)
-        self.obstacles.append(obstacle3)
-
-    # def PID_controller(self):
-    #     '''PID controller for stabilizing the drone'''
-    #     alpha_ref = 0
-    #     alpha = self.drone.frame_shape.body.angle
-    #     alpha_dot = self.drone.frame_shape.body.angular_velocity
+        # obstacle1 = Circle(200,300,20,c,self.space)
+        # self.obstacles.append(obstacle1)
+        # obstacle2 = Circle(600,500,20,c,self.space)
+        # self.obstacles.append(obstacle2)
+        # obstacle3 = Circle(400,400,20,c,self.space)
+        # self.obstacles.append(obstacle3)
 
 
     def step(self, action):
@@ -179,17 +175,6 @@ class Drone2dEnv(gym.Env):
             x, y = self.drone.frame_shape.body.position
             if np.abs(self.shade_x-x) > self.drone_shade_distance or np.abs(self.shade_y-y) > self.drone_shade_distance:
                 self.add_drone_shade()
-
-        #Checking if Waypoint is passed uncertain if this is needed
-        # if self.predef_path:
-        #     self.prog = self.predef_path.get_closest_u(self.drone.frame_shape.body.position, self.waypoint_index)
-        #     self.path_prog.append(self.prog)
-            
-        #     k = self.predef_path.get_u_index(self.prog)
-        #     if k > self.waypoint_index:
-        #         print("Passed waypoint {:d}".format(k+1), self.predef_path.waypoints[k], "\tquad position:", self.drone.frame_shape.body.position)
-        #         self.passed_waypoints = np.vstack((self.passed_waypoints, self.predef_path.waypoints[k]))
-        #         # self.waypoint_index = k 
 
         obs = self.get_observation()
         drone_vel_x = obs[0]

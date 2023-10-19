@@ -2,6 +2,7 @@ import pymunk
 import pymunk.pygame_util
 import pygame
 import numpy as np
+from predef_path import QPMI2D
 
 #File to generate obstacles in the environment
 class Obstacle:
@@ -54,19 +55,31 @@ class Circle(Obstacle):
         space.add(self.obstacle_body, self.shape)
         
 
-def generate_obstacles(n, space):
+def generate_obstacles_around_path(n, space, path:QPMI2D, mean, std):
     obstacles = []
     color = (188, 72, 72)
-    for _ in range(n):
-        random_size = np.random.randint(10, 80)
-        random_x = np.random.randint(200, 600)
-        random_y = np.random.randint(200, 600)
-        if np.random.choice([True, False]):
-            obstacle = Square(random_x, random_y, random_size, color, space)
+    num_obstacles = 0
+    path_lenght = path.length
+    while num_obstacles < n:
+        #uniform distribution of length along path
+        u_obs = np.random.uniform(0.20*path_lenght,0.90*path_lenght)
+        #get path angle at u_obs
+        path_angle = path.get_direction_angles(u_obs)
+        #Draw a normal distributed random number for the distance from the path
+        dist = np.random.normal(mean, std)
+        #get x,y coordinates of the obstacle if it were placed on the path
+        x,y = path.__call__(u_obs)
+        obs_on_path_pos = np.array([x,y])
+        #offset the obstacle from the path 90 degrees normal on the path
+        obs_pos = obs_on_path_pos + dist*np.array([np.cos(path_angle-np.pi/2),np.sin(path_angle-np.pi/2)])
+
+        obs_size = np.random.uniform(10,50) #uniform distribution of size
+        if np.linalg.norm(obs_pos - obs_on_path_pos) > obs_size+10: #10 is a safety margin #TODO determine if obstacles are allowed to overlap
+            obs = Circle(obs_pos[0],obs_pos[1],obs_size,color,space)    
+            obstacles.append(obs)
+            num_obstacles += 1
         else:
-            random_height = np.random.randint(10, 80)
-            obstacle = Rectangle(random_x, random_y, random_size, random_height, color, space)
-        obstacles.append(obstacle)
+            continue
 
     return obstacles
 
