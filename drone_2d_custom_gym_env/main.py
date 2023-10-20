@@ -15,7 +15,6 @@ def _manual_control(env):
     # - Map keyboard inputs to valid actions
     # - Reset environment once done is True
     # - Exits upon closing the window or pressing ESCAPE.
-    # obs, info = env.reset() from Thomascode
     state = env.reset()
     while True:
         env.render()
@@ -24,15 +23,22 @@ def _manual_control(env):
             for event in events:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RIGHT:
-                        input = [1,0]
+                        input = [1,-1]
                     if event.key == pygame.K_LEFT:
-                        input = [0,1]
+                        input = [-1,1]
 
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_RIGHT:
-                        input = [0,0]  
-                    if event.key == pygame.K_LEFT:
-                        input = [0,0]  
+                # if event.type == pygame.KEYUP:
+                #     if event.key == pygame.K_RIGHT:
+                #         input = [0,0]  
+                #     if event.key == pygame.K_LEFT:
+                #         input = [0,0]  
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        input = [1,1]   
+                    if event.key == pygame.K_DOWN:
+                        input = [-1,-1]
+
 
                     if event.key == pygame.K_ESCAPE:
                         env.close()
