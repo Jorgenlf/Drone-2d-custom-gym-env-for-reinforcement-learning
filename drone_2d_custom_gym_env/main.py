@@ -70,10 +70,10 @@ register(
 
 #---------------------------------#
 
-mode = "debug" #debug, train, eval
+mode = "train" #debug, train, eval
 
-# mode = "eval"
-agent_path = 'C:\CodeThatsSusceptibleToOneDrive\Specialization project\Drone-2d-custom-gym-env-for-reinforcement-learning\ppo_agents\mb_betterO11_2.zip' 
+mode = "eval"
+agent_path = 'ppo_agents\latest.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 
 #---------------------------------#
@@ -98,13 +98,13 @@ elif mode == "train":
     # Init callbacks #TODO make a smart folder structure
     tensorboard_logger = TensorboardLogger()
     checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
-                                            save_path="/logs/",
+                                            save_path="logs",
                                             name_prefix="rl_model",
                                             verbose=True)
     # List of callbacks to be called
     callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-    model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="/logs/")
+    model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
     model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
     model.save('new_agent')

@@ -71,16 +71,33 @@ class TensorboardLogger(BaseCallback):
 
             avg_reward = 0
             avg_length = 0
+            avg_collision_reward = 0
+            avg_collision_avoidance_reward = 0
+            avg_pf_reward = 0
+            avg_close_to_target_reward = 0
             for info in infos:
                 avg_reward += info["reward"]
                 avg_length += info["env_steps"]
+                avg_collision_reward += info["collision_reward"]
+                avg_collision_avoidance_reward += info["collision_avoidance_reward"]
+                avg_pf_reward += info["path_following_reward"]
+                avg_close_to_target_reward += info["close_to_target_reward"]
+
 
             avg_reward /= n_done
             avg_length /= n_done
+            avg_collision_reward /= n_done
+            avg_collision_avoidance_reward /= n_done
+            avg_pf_reward /= n_done
+            avg_close_to_target_reward /= n_done
 
             # Write to the tensorboard logger
             self.logger.record("episodes/avg_reward", avg_reward)
             self.logger.record("episodes/avg_length", avg_length)
+            self.logger.record("episodes/avg_collision_reward", avg_collision_reward)
+            self.logger.record("episodes/avg_collision_avoidance_reward", avg_collision_avoidance_reward)
+            self.logger.record("episodes/avg_pf_reward", avg_pf_reward)
+            self.logger.record("episodes/avg_close_to_target_reward", avg_close_to_target_reward)
 
         return True
 
