@@ -70,9 +70,9 @@ register(
 
 #---------------------------------#
 
-mode = "train" #debug, train, eval
+mode = "debug" #debug, train, eval
 
-mode = "eval"
+# mode = "eval"
 agent_path = 'ppo_agents\latest.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 

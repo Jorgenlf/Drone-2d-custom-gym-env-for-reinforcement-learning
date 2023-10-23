@@ -35,16 +35,16 @@ class Drone2dEnv(gym.Env):
         self.render_shade = render_shade
 
         #Rendering initialization
-        self.screen_width = 1000
-        self.screen_height = 1000
+        self.screen_width = 800
+        self.screen_height = 800
         if self.render_sim is True:
             self.init_pygame()
             self.flight_path = []
             self.drop_path = []
             self.path_drone_shade = []
             self.draw_red = False
-        self.obs_angle = 0
-        self.vel_angle = 0
+            self.obs_angle = 0
+            self.vel_angle = 0
 
         #Predefined path generation
         self.wps = []
@@ -76,6 +76,7 @@ class Drone2dEnv(gym.Env):
         self.x_target = self.wps[0][0]
         self.y_target = self.wps[0][1]
 
+        #Action and observation space
         min_action = np.array([-1, -1], dtype=np.float32)
         max_action = np.array([1, 1], dtype=np.float32)
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
@@ -184,20 +185,32 @@ class Drone2dEnv(gym.Env):
         target_dist_y = obs[5]
         drone_pos_x = obs[6]
         drone_pos_y = obs[7]
-        drone_closest_obs_dist = obs[8]
-        drone_closest_obs_angle = obs[9]
-        drone_vel_angle = obs[10]
-        closest_point_x = obs[11]
-        closest_point_y = obs[12]
-        
-        #Transforming from -1 to 1 range to x y range
-        closest_point_on_prepath = np.array([closest_point_x*0.5*self.screen_width + self.screen_width/2, closest_point_y*0.5*self.screen_height +self.screen_height/2])
+
+        drone_closest_obs_dist_x = self.invm1to1(obs[8], 0, self.screen_width)
+        drone_closest_obs_dist_y = self.invm1to1(obs[9], 0, self.screen_height)
+
+        drone_closest_obs_angle = obs[10]
+        drone_vel_angle = obs[11]
+        drone_closest_obs_angle = (drone_closest_obs_angle)*np.pi
+        drone_vel_angle = (drone_vel_angle)*np.pi
+        if drone_closest_obs_angle < 0: drone_closest_obs_angle += 2*np.pi
+        if drone_vel_angle < 0: drone_vel_angle += 2*np.pi   
+        if self.render_sim is True:
+            self.obs_angle = drone_closest_obs_angle
+            self.vel_angle = drone_vel_angle
+
+        closest_point_x = self.invm1to1(obs[12], 0, self.screen_width)
+        closest_point_y = self.invm1to1(obs[13], 0, self.screen_height)
+
+
+        #TODO make LOS type of reward by either shifting this point further down the path or by making a new point further down the path
+        closest_point_on_prepath = np.array([closest_point_x, closest_point_y])
         dist_from_path = np.linalg.norm(closest_point_on_prepath - self.drone.frame_shape.body.position)
         reward_path_following = np.clip(np.log(dist_from_path), - np.inf, np.log(50)) / (- np.log(50)) #Wehther 20 or more pixels away from path, reward is -1
         # print('reward_path_following', reward_path_following)
 
-
-        #TODO Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
+        #Update so the lambda_path_following variable is dynamically lowered when the drone is close to an obstacle
+        #TODO more elegantly?
         lambda_PF = 0.5
         lambda_CA = 1- lambda_PF
 
@@ -208,25 +221,18 @@ class Drone2dEnv(gym.Env):
             reward_collision = -20
             end_cond_1 = True
 
-        #Collision avoidance reward #TODO Check if there is a better way to do this
+        #Collision avoidance reward 
+        #TODO Check if there is a better way to do this
         
         #Might move to init
         self.danger_range = 100
         self.danger_angle = 30
 
-        #Transform the angles from -1 to 1 range to a 0 to 2pi range
-        drone_closest_obs_angle = (drone_closest_obs_angle)*np.pi
-        drone_vel_angle = (drone_vel_angle)*np.pi
-        if drone_closest_obs_angle < 0: drone_closest_obs_angle += 2*np.pi
-        if drone_vel_angle < 0: drone_vel_angle += 2*np.pi        
         angle_diff = abs(drone_vel_angle - drone_closest_obs_angle)*180/np.pi
-
-        #Transform the distances from -1 to 1 range x y range How to do this properly? See #TODO below in observation
-        #TODO do all convertions above where the variables are defined
-        #Per now possibly hacky solution:
-        drone_closest_obs_dist = np.sqrt((self.drone.frame_shape.body.position[0] - self.obstacles[self.closest_obs_index].x_pos)**2 + (self.drone.frame_shape.body.position[1] - self.obstacles[self.closest_obs_index].y_pos)**2)
+        drone_closest_obs_dist = np.sqrt((drone_closest_obs_dist_x)**2 + (drone_closest_obs_dist_y)**2)
         drone_closest_obs_dist = drone_closest_obs_dist - self.obstacles[self.closest_obs_index].radius #Ish correct as the drone is not accounted for
-
+        #TODO account for the drone by checking if the drone is above or below then subtracting the drone height/2 from the distance
+        #if drone is lef or right of obstacle, subtract drone width/2 from distance
 
         reward_collision_avoidance = 0
         if (drone_closest_obs_dist < self.danger_range) and (angle_diff < self.danger_angle):
@@ -235,40 +241,35 @@ class Drone2dEnv(gym.Env):
             if reward_collision_avoidance < 0: reward_collision_avoidance = reward_collision_avoidance/10
 
             self.draw_red = True
-            lambda_CA = 0.55
-            lambda_PF = 0.45
+            lambda_CA = 0.65
+            lambda_PF = 1- lambda_CA
         elif drone_closest_obs_dist <self.danger_range:
             
             reward_collision_avoidance = -(((100.0/(drone_closest_obs_dist))+2) + ((180.0/(angle_diff))+2))
             if reward_collision_avoidance < 0: reward_collision_avoidance = reward_collision_avoidance/20
 
             self.draw_red = False
-            lambda_CA = 0.6
-            lambda_PF = 0.4
+            lambda_CA = 0.55
+            lambda_PF = 1- lambda_CA
         else:
             reward_collision_avoidance = 1
             self.draw_red = False
-        #For drawing
-        self.obs_angle = drone_closest_obs_angle
-        self.vel_angle = drone_vel_angle
         # print('reward_collision_avoidance', reward_collision_avoidance)
 
-        #Move target to next waypoint
         reach_end_reward = 0
         end_cond_2 = False
-        if np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index < len(self.wps)-1:
-            self.x_target = self.wps[self.waypoint_index+1][0]
-            self.y_target = self.wps[self.waypoint_index+1][1]
-            self.waypoint_index += 1
-        elif np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index == len(self.wps)-1:
+        # if np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index < len(self.wps)-1:
+        #     self.x_target = self.wps[self.waypoint_index+1][0]
+        #     self.y_target = self.wps[self.waypoint_index+1][1]
+        #     self.waypoint_index += 1
+        if np.abs(target_dist_x) < 0.10 and np.abs(target_dist_y) < 0.10 and self.waypoint_index == len(self.wps)-1:
             end_cond_2 = True
-            reach_end_reward = 10
-            #Give reward for this? #TODO
+            reach_end_reward = 100
 
         #Stops episode, when drone is out of frame or alpha angle too aggressive
         end_cond_3 = False
         OOB_or_too_aggressive_alpha_reward = 0
-        if np.abs(drone_alpha)==1 or np.abs(drone_pos_x)==1 or np.abs(drone_pos_y)==1:
+        if np.abs(drone_alpha)==1 or np.abs(drone_pos_x)>=1 or np.abs(drone_pos_y)>=1: 
             end_cond_3 = True
             OOB_or_too_aggressive_alpha_reward = -5
 
@@ -278,19 +279,19 @@ class Drone2dEnv(gym.Env):
             end_cond_4 = True
 
         #Reward close too target
-        reward_close_to_target = np.clip(np.log(abs(target_dist_x)+0.1), - np.inf, np.log(10)) / (- np.log(10)) + np.clip(np.log(abs(target_dist_y)+0.1), - np.inf, np.log(10)) / (- np.log(10))
-        #TODO make something more understandable than this^
+        # reward_close_to_target = np.clip(np.log(abs(target_dist_x)+0.1), - np.inf, np.log(10)) / (- np.log(10)) + np.clip(np.log(abs(target_dist_y)+0.1), - np.inf, np.log(10)) / (- np.log(10))
+        # #TODO make something more understandable than this^ or drop it if cant assume obstacles are far from wps
 
         #OLD(1.0/(np.abs(target_dist_x)+0.1)) + (1.0/(np.abs(target_dist_y)+0.1)) 
         # print('\nreward_close_to_target', reward_close_to_target)
 
-        reward = OOB_or_too_aggressive_alpha_reward + reward_close_to_target + reward_path_following*lambda_PF + reward_collision + reward_collision_avoidance*lambda_CA + reach_end_reward
+        reward = OOB_or_too_aggressive_alpha_reward + reward_path_following*lambda_PF + reward_collision + reward_collision_avoidance*lambda_CA + reach_end_reward
         # print(reward)
 
         self.info['reward'] = reward
         self.info['collision_avoidance_reward'] = reward_collision_avoidance 
         self.info['path_following_reward'] = reward_path_following
-        self.info['close_to_target_reward'] = reward_close_to_target
+        # self.info['close_to_target_reward'] = reward_close_to_target
         self.info['collision_reward'] = reward_collision
         self.info['env_steps'] = self.current_time_step
 
@@ -315,7 +316,6 @@ class Drone2dEnv(gym.Env):
     #     obstacle_distances.sort()
     #     obstacle_distances = obstacle_distances[:k]
     #     return obstacle_distances
-        
 
     def get_observation(self):
         # Drone velocities
@@ -331,75 +331,86 @@ class Drone2dEnv(gym.Env):
         alpha = self.drone.frame_shape.body.angle 
         alpha = np.clip(alpha/(np.pi/2), -1, 1)
 
-        #Distance to target TODO merge this with the closest path point? How to urge to go forward then?
         x, y = self.drone.frame_shape.body.position
-
+        #---------
+        #If assume wps are far from obstacles redo this to use m1to1
+        #If assume that one cant reach all wps remove this or redo this to use m1to1 and let drone skip wps
+        #May keep it to reward reaching the end
         if x < self.x_target:
-            distance_x = np.clip((x/self.x_target) - 1, -1, 0)
+            target_distance_x = np.clip((x/self.x_target) - 1, -1, 0)
 
         else:
-            distance_x = np.clip((-x/(self.x_target-self.screen_width) + self.x_target/(self.x_target-self.screen_width)) , 0, 1)
+            target_distance_x = np.clip((-x/(self.x_target-self.screen_width) + self.x_target/(self.x_target-self.screen_width)) , 0, 1)
 
         if y < self.y_target:
-            distance_y = np.clip((y/self.y_target) - 1, -1, 0)
+            target_distance_y = np.clip((y/self.y_target) - 1, -1, 0)
 
         else:
-            distance_y = np.clip((-y/(self.y_target-self.screen_height) + self.y_target/(self.y_target-self.screen_height)) , 0, 1)
-        
+            target_distance_y = np.clip((-y/(self.y_target-self.screen_height) + self.y_target/(self.y_target-self.screen_height)) , 0, 1)
+        #---------
+
         #Position of drone
-        pos_x = np.clip(2.0*x/self.screen_width - 1, -1, 1)
-        pos_y = np.clip(2.0*y/self.screen_height - 1, -1, 1)
+        #good ----
+        pos_x = self.m1to1(x, 0, self.screen_width)
+        pos_y = self.m1to1(y, 0, self.screen_height)
 
         #Distance to closest obstacle
-        closest_distance = 100000
+        closest_distance = 1000000
+        closest_obs_x_dist = 0
+        closest_obs_y_dist = 0
         for i, obstacle in enumerate(self.obstacles):
             distance = np.sqrt((x - obstacle.x_pos)**2 + (y - obstacle.y_pos)**2)
             if distance < closest_distance:
                 closest_distance = distance
+                closest_obs_x_dist = x - obstacle.x_pos
+                closest_obs_y_dist = y - obstacle.y_pos
                 self.closest_obs_index = i
-        closest_distance = np.clip((closest_distance), -1, 1) #Might scale in another way #TODO should probably use y and x components instead of distance
-        #and then calculate the distance using the transformed x and y components.
+        closest_obs_x_dist = self.m1to1(closest_obs_x_dist, 0, self.screen_width)
+        closest_obs_y_dist = self.m1to1(closest_obs_y_dist, 0, self.screen_height)
 
 
         alphadrone = self.drone.frame_shape.body.angle 
-        closest_obs_angle = np.arctan2(y - self.obstacles[self.closest_obs_index].y_pos, x - self.obstacles[self.closest_obs_index].x_pos)
+        closest_obs_angle = np.arctan2(y - self.obstacles[self.closest_obs_index].y_pos, x - self.obstacles[self.closest_obs_index].x_pos) #range -pi to pi
         #body frame
         closest_obs_angle = closest_obs_angle - alphadrone - np.pi
         if closest_obs_angle < -np.pi: closest_obs_angle += 2*np.pi
         if closest_obs_angle > np.pi: closest_obs_angle -= 2*np.pi
-        # closest_obs_angle = np.clip((closest_obs_angle), -1, 1)
-        # print("\nObsAng to the drone in deg", closest_obs_angle*180/np.pi)
         closest_obs_angle = (closest_obs_angle/(np.pi)) #scales from -1 to 1
 
         velocity_x_, velocity_y_ = self.drone.frame_shape.body.velocity_at_local_point((0, 0))
-        velocity_angle_w = np.arctan2(velocity_y_, velocity_x_)
+        velocity_angle_w = np.arctan2(velocity_y_, velocity_x_) #range -pi to pi
         #body frame
         velocity_angle_b = velocity_angle_w - alphadrone
         if velocity_angle_b < -np.pi: velocity_angle_b += 2*np.pi
         if velocity_angle_b > np.pi: velocity_angle_b -= 2*np.pi
         velocity_angle_b = (velocity_angle_b/(np.pi)) #scales from -1 to 1
-        # print("Alpha angle in deg", alphadrone*180/np.pi)
-        # print("VelAng world", velocity_angle_w*180/np.pi)
-        # print("VelAng body", velocity_angle_b*180/np.pi)
-        # print("\n")
 
 
         closest_point = self.predef_path.get_closest_position(self.drone.frame_shape.body.position, self.waypoint_index)
         closest_point_x = closest_point[0]
         closest_point_y = closest_point[1]
-        closest_point_x = np.clip(closest_point_x*2.0/self.screen_width - 1, -1, 1)
-        closest_point_y = np.clip(closest_point_y*2.0/self.screen_height - 1, -1, 1)
+        closest_point_x = self.m1to1(closest_point_x, 0, self.screen_width)
+        closest_point_y = self.m1to1(closest_point_y, 0, self.screen_height)
+        #good ----
 
-        return np.array([velocity_x, velocity_y, omega, alpha, distance_x, distance_y, pos_x, pos_y,closest_distance,closest_obs_angle,velocity_angle_b,closest_point_x,closest_point_y])
+        return np.array([velocity_x, velocity_y, omega, alpha, target_distance_x, target_distance_y, pos_x, pos_y,closest_obs_x_dist,closest_obs_y_dist,closest_obs_angle,velocity_angle_b,closest_point_x,closest_point_y])
+    
+    def m1to1(self,value, min, max):
+        return 2.0*(value-min)/(max-min) - 1
+    
+    def invm1to1(self, value, min, max):
+        return (value+1)*(max-min)/2.0 + min
+
 
     def render(self, mode='human', close=False):
         if self.render_sim is False: return
 
         pygame_events(self.space, self, self.change_target)
         self.screen.fill((243, 243, 243))
-        pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, self.screen_width, self.screen_height), 8)
-        pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, self.screen_width-100, self.screen_height-100), 4)
-        pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(self.screen_width/4, self.screen_height/4, self.screen_width/2, self.screen_height/2), 4)
+        #Dont need the squares
+        # pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, self.screen_width, self.screen_height), 8)
+        # pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, self.screen_width-100, self.screen_height-100), 4)
+        # pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(self.screen_width/4, self.screen_height/4, self.screen_width/2, self.screen_height/2), 4)
 
         #Drawing predefined path
         predef_path_coords = self.predef_path.get_path_coord()
