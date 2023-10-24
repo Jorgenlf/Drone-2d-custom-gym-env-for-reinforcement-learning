@@ -214,41 +214,56 @@ class QPMI2D():
         return t_hat, n_hat
 
 
-    def get_direction_angles(self, u):
+    def get_direction_angle(self, u):
         '''
-        Calculate the azimuth angle of the path at parameter u
+        Calculate the path angle of the path at parameter u TODO check that it actually gives the path angle
         '''
         dx, dy = self.calculate_gradient(u)[:]
         azimuth = np.arctan2(dy, dx)
         return azimuth
 
 
-    def get_closest_u(self, position, wp_idx, margin=10.0):
+    def get_closest_u(self, position, wp_idx=0, margin=10.0):
         '''
         Calculate the parameter u of the path that is closest to the given position
         '''
-        #NEW #TODO fix so starting piece of path is correctly ignored
-        if wp_idx == 0:
-            x1 = 0.0
-            x2 = 0.0
-        else:
-            x1 = self.us[wp_idx-1] - margin 
-            x2 = self.us[wp_idx] + margin if wp_idx < len(self.us) - 2 else self.length
+        #NEW #TODO fix so starting piece of path is correctly ignored UNDO WP_IDX = 0 if use this
+        # if wp_idx == 0:
+        #     x1 = 0.0
+        #     x2 = 0.0
+        # else:
+        #     x1 = self.us[wp_idx-1] - margin 
+        #     x2 = self.us[wp_idx] + margin if wp_idx < len(self.us) - 2 else self.length
 
         #OLD
         # x1 = self.us[wp_idx] - margin 
         # x2 = self.us[wp_idx+1] + margin if wp_idx < len(self.us) - 2 else self.length
+
+        #NEW NEW try to calculate closest u from all segments
+        x1 = 0.0-margin
+        x2 = self.length+margin
 
         output = fminbound(lambda u: np.linalg.norm(self(u) - position), 
                         full_output=0, x1=x1, x2=x2, xtol=1e-6, maxfun=500)
         return output
 
 
-    def get_closest_position(self, position, wp_idx):
+    def get_closest_position(self, position, wp_idx=0):#redo wp_idx=0 if revert changes
         '''
         Calculate the position on the path that is closest to the given position
         '''
         return self(self.get_closest_u(position, wp_idx))
+    
+    def get_lookahead_point(self, position, lookahead_distance):
+        '''
+        Calculate the position on the path that is lookahead_distance from the given position
+        '''
+        u = self.get_closest_u(position)
+        if u + lookahead_distance > self.length:
+            u_lookahead = self.length
+        else:
+            u_lookahead = u + lookahead_distance
+        return self(u_lookahead)
 
 
     def get_endpoint(self):
@@ -266,7 +281,7 @@ class QPMI2D():
         quadratic_path = []
         for du in u:
             quadratic_path.append(self(du))
-            self.get_direction_angles(du)
+            self.get_direction_angle(du)
         quadratic_path = np.array(quadratic_path)
         plt.plot(quadratic_path[:, 0], quadratic_path[:, 1], color="#3388BB", label="Path")
         if wps_on:
@@ -284,7 +299,7 @@ class QPMI2D():
         quadratic_path = []
         for du in u:
             quadratic_path.append(self(du))
-            self.get_direction_angles(du)
+            self.get_direction_angle(du)
         quadratic_path = np.array(quadratic_path)
         return quadratic_path
 

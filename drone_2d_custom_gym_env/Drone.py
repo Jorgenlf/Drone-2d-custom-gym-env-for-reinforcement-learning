@@ -92,14 +92,14 @@ class Drone():
         self.right_3.error_bias = 0
         space.add(self.right_3)
 
-    def change_positions(self, x, y, space):
-        self.frame_shape.body.position = x, y
-        space.reindex_shapes_for_body(self.frame_shape.body)
+    # def change_positions(self, x, y, space):
+    #     self.frame_shape.body.position = x, y
+    #     space.reindex_shapes_for_body(self.frame_shape.body)
 
-        angle = self.frame_shape.body.angle
+    #     angle = self.frame_shape.body.angle
 
-        self.left_motor_shape.body.position = np.cos(angle+np.pi)*self.drone_radius+x, np.sin(angle+np.pi)*self.drone_radius+y
-        space.reindex_shapes_for_body(self.left_motor_shape.body)
+    #     self.left_motor_shape.body.position = np.cos(angle+np.pi)*self.drone_radius+x, np.sin(angle+np.pi)*self.drone_radius+y
+    #     space.reindex_shapes_for_body(self.left_motor_shape.body)
 
-        self.right_motor_shape.body.position = np.cos(angle)*self.drone_radius+x, np.sin(angle)*self.drone_radius+y
-        space.reindex_shapes_for_body(self.right_motor_shape.body)
+    #     self.right_motor_shape.body.position = np.cos(angle)*self.drone_radius+x, np.sin(angle)*self.drone_radius+y
+    #     space.reindex_shapes_for_body(self.right_motor_shape.body)

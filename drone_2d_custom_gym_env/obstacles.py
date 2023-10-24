@@ -64,7 +64,7 @@ def generate_obstacles_around_path(n, space, path:QPMI2D, mean, std):
         #uniform distribution of length along path
         u_obs = np.random.uniform(0.20*path_lenght,0.90*path_lenght)
         #get path angle at u_obs
-        path_angle = path.get_direction_angles(u_obs)
+        path_angle = path.get_direction_angle(u_obs)
         #Draw a normal distributed random number for the distance from the path
         dist = np.random.normal(mean, std)
         #get x,y coordinates of the obstacle if it were placed on the path
