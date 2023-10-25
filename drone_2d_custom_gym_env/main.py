@@ -16,6 +16,7 @@ def _manual_control(env):
     # - Reset environment once done is True
     # - Exits upon closing the window or pressing ESCAPE.
     state = env.reset()
+    input = [0,0]
     while True:
         env.render()
         try:
@@ -26,19 +27,10 @@ def _manual_control(env):
                         input = [1,-1]
                     if event.key == pygame.K_LEFT:
                         input = [-1,1]
-
-                # if event.type == pygame.KEYUP:
-                #     if event.key == pygame.K_RIGHT:
-                #         input = [0,0]  
-                #     if event.key == pygame.K_LEFT:
-                #         input = [0,0]  
-
-                if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
                         input = [1,1]   
                     if event.key == pygame.K_DOWN:
                         input = [-1,-1]
-
 
                     if event.key == pygame.K_ESCAPE:
                         env.close()
@@ -70,7 +62,7 @@ register(
 
 #---------------------------------#
 
-mode = "debug" #debug, train, eval
+mode = "train" #debug, train, eval
 
 # mode = "eval"
 agent_path = 'ppo_agents\latest.zip' 
