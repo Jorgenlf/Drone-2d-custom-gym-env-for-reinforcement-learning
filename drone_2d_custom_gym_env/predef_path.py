@@ -83,8 +83,7 @@ class QPMI2D():
         '''
         n = self.get_u_index(u)
         mu_f = (self.us[n+1]-u)/(self.us[n+1] - self.us[n])
-        return mu_f        
-
+        return mu_f   
 
     def __call__(self, u):
         '''
@@ -101,7 +100,7 @@ class QPMI2D():
             x = ax*u**2 + bx*u + cx
             y = ay*u**2 + by*u + cy
 
-        elif u >= self.us[-2]-0.001 and u <= self.us[-1]: # last stretch
+        elif (u >= self.us[-2]-0.001 and u <= self.us[-1]) or self.get_u_index(u) == len(self.us)-1: # last stretch
             ax = self.x_params[-1][0]
             ay = self.y_params[-1][0]
             bx = self.x_params[-1][1]
@@ -216,10 +215,11 @@ class QPMI2D():
 
     def get_direction_angle(self, u):
         '''
-        Calculate the path angle of the path at parameter u TODO check that it actually gives the path angle
-        '''
+        Calculate the angle of tangent relative to the path at parameter u (in radians)'''
+
         dx, dy = self.calculate_gradient(u)[:]
-        azimuth = np.arctan2(dy, dx)
+        azimuth = np.arctan2(dy, dx) #OLD
+        # azimuth = np.arctan2(dx,dy) #Make it NED like so that 0 is north If use this change obsgen.
         return azimuth
 
 
