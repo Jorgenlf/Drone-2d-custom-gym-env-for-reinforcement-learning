@@ -9,6 +9,8 @@ class Drone():
     def __init__(self, x, y, angle, height, width, mass_f, mass_l, mass_r, space):
         distance_between_joints = height/2 - 3
         self.drone_radius = width/2 - height/2
+        self.width = width
+        self.height = height
 
         #Drone's frame properties
         self.frame_shape = pymunk.Poly.create_box(None, size=(width, height/2))
