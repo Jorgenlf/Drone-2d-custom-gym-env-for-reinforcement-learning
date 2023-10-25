@@ -1,4 +1,6 @@
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.utils import set_random_seed
 import gym
 import time
 
@@ -52,6 +54,21 @@ def _manual_control(env):
             return
 
 
+def make_mp_env(env_id: str, rank: int, seed: int = 0):
+    """
+    Utility function for multiprocessed env.
+    :param env_id: (str) the environment ID
+    :param num_env: (int) the number of environments you wish to have in subprocesses
+    :param seed: (int) the inital seed for RNG
+    :param rank: (int) index of the subprocess
+    """
+    def _init():
+        env = gym.make(env_id, render_mode='rgb_array')
+        env.reset(seed=seed + rank)
+        return env
+    set_random_seed(seed=seed)
+    return _init
+
 register(
     id='drone-2d-custom-v0',
     entry_point='drone_2d_env:Drone2dEnv',
@@ -61,11 +78,16 @@ register(
 )
 
 #---------------------------------#
+# Set mode and parameters here
 
-mode = "train" #debug, train, eval
+mode = 'debug'
 
-# mode = "eval"
-agent_path = 'ppo_agents\latest.zip' 
+mode = "train" 
+single_threaded = True 
+num_cpu = 4  
+
+mode = "eval"
+agent_path = 'ppo_agents/badlatest.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 
 #---------------------------------#
@@ -79,13 +101,15 @@ if mode == "debug":
     exit()
 
 elif mode == "train":
-    env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
-                shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
-    num_cpu = 1
-
-    # Multi-Threading 
-    # num_cpu = 4
-    # env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
+    env = None
+    if single_threaded is True:
+        env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
+                    shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
+        num_cpu = 1
+    else:
+        # Multi-Threading
+        env_id = 'drone-2d-custom-v0' 
+        env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
     # Init callbacks #TODO make a smart folder structure
     tensorboard_logger = TensorboardLogger()
