@@ -315,7 +315,7 @@ class Drone2dEnv(gym.Env):
             end_cond_4 = True
 
         reward = OOB_or_too_aggressive_alpha_reward + reward_path_adherence*lambda_PA + reward_path_progression + reward_collision + reward_collision_avoidance*lambda_CA + reach_end_reward
-        # print(reward)
+        print(reward)
 
         self.info['reward'] = reward
         self.info['collision_avoidance_reward'] = reward_collision_avoidance
@@ -443,9 +443,9 @@ class Drone2dEnv(gym.Env):
         pygame.draw.circle(self.screen, (0, 0, 255), closest_point, 5)
 
         #Drawing vector between drone and lookahead point
-        lookahead_point = self.predef_path.get_lookahead_point(self.drone.frame_shape.body.position, self.lookahead)
-        pygame.draw.line(self.screen, (0, 150, 150), (self.drone.frame_shape.body.position[0], self.screen_height-self.drone.frame_shape.body.position[1]), (lookahead_point[0], self.screen_height-lookahead_point[1]), 4)
-        pygame.draw.circle(self.screen, (0, 150, 150), (lookahead_point[0], self.screen_height-lookahead_point[1]), 5)
+        # lookahead_point = self.predef_path.get_lookahead_point(self.drone.frame_shape.body.position, self.lookahead)
+        # pygame.draw.line(self.screen, (0, 150, 150), (self.drone.frame_shape.body.position[0], self.screen_height-self.drone.frame_shape.body.position[1]), (lookahead_point[0], self.screen_height-lookahead_point[1]), 4)
+        # pygame.draw.circle(self.screen, (0, 150, 150), (lookahead_point[0], self.screen_height-lookahead_point[1]), 5)
 
         drone_x, drone_y = self.drone.frame_shape.body.position #TODO maybe change these for the values gathered form the observation
 
