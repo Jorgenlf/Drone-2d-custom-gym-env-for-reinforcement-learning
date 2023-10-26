@@ -85,7 +85,7 @@ single_threaded = True
 num_cpu = 4  
 
 # mode = "eval"
-agent_path = 'ppo_agents/badlatest.zip' 
+agent_path = 'ppo_agents/onlyPA_PP261023.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
