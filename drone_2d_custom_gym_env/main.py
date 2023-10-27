@@ -3,12 +3,15 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 import gym
 import time
+from multiprocessing import freeze_support, get_context
+import multiprocessing
 
 from tensorboardlogger import *
 from drone_2d_env import * 
 
 from gym.envs.registration import register
 
+    
 def _manual_control(env):
     """ Manual control function.
         Reads keyboard inputs and maps them to valid inputs to the environment.
@@ -74,18 +77,19 @@ register(
     entry_point='drone_2d_env:Drone2dEnv',
     kwargs={'render_sim': False, 'render_path': True, 'render_shade': True,
             'shade_distance': 75, 'n_steps': 900, 'n_fall_steps': 5, 'change_target': False,
-            'initial_throw': True}
+            'initial_throw': True, 
+            'path_segment_length':120, 'n_wps': 6,'screensize_x':800,'screensize_y':800 }
 )
 
 #---------------------------------#
 mode = 'debug'
 
-# mode = "train" 
-single_threaded = True 
+mode = "train" 
+single_threaded = True #if True, only one environment will be used for training 
 num_cpu = 4  
 
-# mode = "eval"
-agent_path = 'ppo_agents/onlyPA_PP261023.zip' 
+mode = "eval"
+agent_path = 'ppo_agents/PF_only_3_1.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
@@ -100,28 +104,47 @@ if mode == "debug":
 elif mode == "train":
     env = None
     if single_threaded is True:
-        env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
-                    shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
         num_cpu = 1
-    else:
-        # Multi-Threading
-        env_id = 'drone-2d-custom-v0' 
-        env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
+        env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
+                    shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True,screensize_x =1000, screensize_y=1000)
+        # Init callbacks #TODO make a smart folder structure
+        tensorboard_logger = TensorboardLogger()
+        checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
+                                                save_path="logs",
+                                                name_prefix="rl_model",
+                                                verbose=True)
+        # List of callbacks to be called
+        callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-    # Init callbacks #TODO make a smart folder structure
-    tensorboard_logger = TensorboardLogger()
-    checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
-                                            save_path="logs",
-                                            name_prefix="rl_model",
-                                            verbose=True)
-    # List of callbacks to be called
-    callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
+        model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
-    model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
+        model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
+        model.save('new_agent')
+        env.close()
 
-    model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
-    model.save('new_agent')
-    env.close()
+    else:# Multi-Threading #TODO make this work
+        if __name__ == '__main__':
+            print('CPU COUNT:', multiprocessing.cpu_count())
+
+            freeze_support()
+            ctx = get_context('spawn')
+            env_id = 'drone-2d-custom-v0' 
+            env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
+
+            # Init callbacks #TODO make a smart folder structure
+            tensorboard_logger = TensorboardLogger()
+            checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
+                                                    save_path="logs",
+                                                    name_prefix="rl_model",
+                                                    verbose=True)
+            # List of callbacks to be called
+            callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
+
+            model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
+
+            model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
+            model.save('new_agent')
+            env.close()
 
 elif mode == "eval":
     env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
