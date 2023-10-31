@@ -304,8 +304,8 @@ class Drone2dEnv(gym.Env):
         dist_from_path = np.linalg.norm(closest_point_on_prepath - drone_pos)
         # reward_path_adherence = np.clip(np.log(dist_from_path), - np.inf, np.log(50)) / (-np.log(50)) #Wehther 50 or more pixels away from path, reward is -1
         reward_path_adherence = -(2*(np.clip(dist_from_path, 0, 50) / 50) - 1)
-        if reward_path_adherence > 0 : reward_path_adherence = reward_path_adherence*10
-        # print('reward_path_adherence', reward_path_adherence)
+        if reward_path_adherence > 0 : reward_path_adherence = reward_path_adherence*5
+        # print('\nreward_path_adherence', reward_path_adherence)
 
         #Path progression reward
         reward_path_progression = 0
@@ -326,7 +326,7 @@ class Drone2dEnv(gym.Env):
         if self.render_sim is True:
             self.look_ahead_point = np.array([look_ahead_x, look_ahead_y]) #Uncomment of use these
             self.look_ahead_angle = look_ahead_angle
-        reward_path_progression = np.cos(drone_vel_angle - look_ahead_angle)
+        reward_path_progression = np.cos(drone_vel_angle - look_ahead_angle)*2.5
 
         #Alternative 3
         #Use closeness to the target i.e. the last waypoint.
@@ -362,9 +362,9 @@ class Drone2dEnv(gym.Env):
         #Reward for alpha angle too aggressive
         agressive_alpha_reward = 0
 
-        if drone_alpha > 0 and drone_alpha > np.pi/4:
+        if drone_alpha > 0 and drone_alpha > np.pi/6:
             agressive_alpha_reward = -np.sin(drone_alpha)
-        if drone_alpha < 0 and drone_alpha < -np.pi/4:
+        if drone_alpha < 0 and drone_alpha < -np.pi/6:
             agressive_alpha_reward = np.sin(drone_alpha)
 
         end_cond_5 = False

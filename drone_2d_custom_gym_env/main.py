@@ -66,8 +66,8 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = gym.make(env_id, render_mode='rgb_array')
-        env.reset(seed=seed + rank)
+        env = gym.make(env_id)
+        env.reset() #seed=seed + rank #TODO should maybe pass this in to the reset fcn...
         return env
     set_random_seed(seed=seed)
     return _init
@@ -85,11 +85,10 @@ register(
 mode = 'debug'
 
 mode = "train" 
-single_threaded = True #if True, only one environment will be used for training 
-num_cpu = 4  
+single_threaded = False #if True, only one environment will be used for training 
 
 mode = "eval"
-agent_path = 'ppo_agents/PF_only_3_1.zip' 
+agent_path = 'ppo_agents/good_fast_PF_only.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
@@ -125,9 +124,11 @@ elif mode == "train":
     else:# Multi-Threading #TODO make this work
         if __name__ == '__main__':
             print('CPU COUNT:', multiprocessing.cpu_count())
+            max_cpu = multiprocessing.cpu_count()
+            num_cpu = max_cpu-4
 
             freeze_support()
-            ctx = get_context('spawn')
+            ctx = multiprocessing.get_context('spawn')
             env_id = 'drone-2d-custom-v0' 
             env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
