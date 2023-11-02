@@ -304,12 +304,22 @@ class QPMI2D():
         return quadratic_path
 
 
-def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles = None, drone_radius = None):
-    x1 = np.random.uniform(100, 180)
-    y1 = np.random.uniform(100, 180)
-    waypoints = [np.array([x1, y1])]
+def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles = None, drone_radius = None,screen_x = None,screen_y = None):
+    '''
+    Generate random waypoints in 2D space
+    scen string determines what kind of waypoints to generate
+    Four different scenarios for where the first waypoint is placed:
+    DL: Down-Left
+    UL: Up-Left
+    DR: Down-Right
+    UR: Up-Right
+    '''
+    waypoints = None
 
-    if scen == '2d':
+    if scen == 'DL':
+        x1 = np.random.uniform(100, 180)
+        y1 = np.random.uniform(100, 180)
+        waypoints = [np.array([x1, y1])]
         for i in range(nwaypoints - 1):
             azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
             x = waypoints[i][0] + distance * np.cos(azimuth)
@@ -317,24 +327,37 @@ def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles = None, dr
             wp = np.array([x, y])
             waypoints.append(wp)
 
-    elif scen == 'path_after_obstacle':
+    elif scen == 'UL':
+        x1 = np.random.uniform(100, 180)
+        y1 = np.random.uniform(screen_y-180, screen_y-100)
+        waypoints = [np.array([x1, y1])]
         for i in range(nwaypoints - 1):
-            too_close = True
-            while too_close:
-                azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
-                x = waypoints[i][0] + distance * np.cos(azimuth)
-                y = waypoints[i][1] + distance * np.sin(azimuth)
-                wp = np.array([x, y])
-                #Check if wp too close to any obstacles
-                one_too_close = False
-                for obs in obstacles:
-                    obs_vec = np.array([obs.x_pos, obs.y_pos])
-                    if np.linalg.norm(wp - obs_vec) < 2 * drone_radius + 2*obs.diagonal:
-                        one_too_close = True
-                if one_too_close:
-                    continue
-                else:
-                    too_close = False
+            azimuth = np.random.uniform(0, -np.pi / 2) #(-np.pi / 4, np.pi / 4)
+            x = waypoints[i][0] + distance * np.cos(azimuth)
+            y = waypoints[i][1] + distance * np.sin(azimuth)
+            wp = np.array([x, y])
+            waypoints.append(wp)
+
+    elif scen == 'DR':
+        x1 = np.random.uniform(screen_x-180, screen_x-100)
+        y1 = np.random.uniform(100, 180)
+        waypoints = [np.array([x1, y1])]
+        for i in range(nwaypoints - 1):
+            azimuth = np.random.uniform(np.pi/2,np.pi) #(-np.pi / 4, np.pi / 4)
+            x = waypoints[i][0] + distance * np.cos(azimuth)
+            y = waypoints[i][1] + distance * np.sin(azimuth)
+            wp = np.array([x, y])
+            waypoints.append(wp)
+
+    elif scen == 'UR':
+        x1 = np.random.uniform(screen_x-180, screen_x-100)
+        y1 = np.random.uniform(screen_y-180, screen_y-100)
+        waypoints = [np.array([x1, y1])]
+        for i in range(nwaypoints - 1):
+            azimuth = np.random.uniform(-np.pi/2,-np.pi) #(-np.pi / 4, np.pi / 4)
+            x = waypoints[i][0] + distance * np.cos(azimuth)
+            y = waypoints[i][1] + distance * np.sin(azimuth)
+            wp = np.array([x, y])
             waypoints.append(wp)
 
     return np.array(waypoints)
@@ -342,7 +365,7 @@ def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles = None, dr
 
 if __name__ == "__main__":
     # wps = np.array([np.array([0, 0]), np.array([20, 10]), np.array([50, 20]), np.array([80, 20]), np.array([90, 50]), np.array([80, 80]), np.array([50, 80]), np.array([20, 60]), np.array([20, 40]), np.array([0, 0])])
-    wps = generate_random_waypoints_2d(10, 70, scen='2d')
+    wps = generate_random_waypoints_2d(10, 70, scen='DL')
     path = QPMI2D(wps)
 
     print(path.get_path_coord())
@@ -364,3 +387,25 @@ if __name__ == "__main__":
     # plt.ylabel(ylabel="Y [m]", fontsize=14)
     # plt.rc('lines', linewidth=3)
     # plt.show()
+
+
+#Remnant part of generate_random_waypoints_2d
+    # elif scen == 'path_after_obstacle':
+    #     for i in range(nwaypoints - 1):
+    #         too_close = True
+    #         while too_close:
+    #             azimuth = np.random.uniform(0, np.pi / 2) #(-np.pi / 4, np.pi / 4)
+    #             x = waypoints[i][0] + distance * np.cos(azimuth)
+    #             y = waypoints[i][1] + distance * np.sin(azimuth)
+    #             wp = np.array([x, y])
+    #             #Check if wp too close to any obstacles
+    #             one_too_close = False
+    #             for obs in obstacles:
+    #                 obs_vec = np.array([obs.x_pos, obs.y_pos])
+    #                 if np.linalg.norm(wp - obs_vec) < 2 * drone_radius + 2*obs.diagonal:
+    #                     one_too_close = True
+    #             if one_too_close:
+    #                 continue
+    #             else:
+    #                 too_close = False
+    #         waypoints.append(wp)

@@ -77,18 +77,18 @@ register(
     entry_point='drone_2d_env:Drone2dEnv',
     kwargs={'render_sim': False, 'render_path': True, 'render_shade': True,
             'shade_distance': 75, 'n_steps': 900, 'n_fall_steps': 5, 'change_target': False,
-            'initial_throw': True, 
-            'path_segment_length':120, 'n_wps': 6,'screensize_x':1000,'screensize_y':1000}
+            'initial_throw': True, 'random_path_spawn':True,
+            'path_segment_length':100, 'n_wps': 8,'screensize_x':1000,'screensize_y':1000}
 )
 
 #---------------------------------#
-mode = 'debug'
+# mode = 'debug'
 
-mode = "train" 
+mode = "train"
 single_threaded = False #When false, multithreading used
 
 mode = "eval"
-agent_path = 'ppo_agents/rl_model_1199856_steps.zip' 
+agent_path = 'ppo_agents/maxObs_PFonly.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 

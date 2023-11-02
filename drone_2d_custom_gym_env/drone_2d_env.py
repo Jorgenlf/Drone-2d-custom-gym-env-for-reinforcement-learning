@@ -29,7 +29,7 @@ class Drone2dEnv(gym.Env):
     """
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
-                 n_steps=900, n_fall_steps=10, change_target=False, initial_throw=True,
+                 n_steps=900, n_fall_steps=10, change_target=False, initial_throw=True,random_path_spawn = True,
                  path_segment_length=120,n_wps=6,screensize_x=800,screensize_y=800):
         #Rendering booleans
         self.render_sim = render_sim
@@ -37,12 +37,32 @@ class Drone2dEnv(gym.Env):
         self.render_shade = render_shade
 
         #Predefined path generation
+        self.random_path_spawn = random_path_spawn
         self.wps = []
         self.seg_length = path_segment_length
-        self.wps = generate_random_waypoints_2d(n_wps,self.seg_length,'2d')
+        if random_path_spawn is True:
+            #random discrete value from 1 to 4
+            spawn = random.randint(1,4)
+            scen = ''
+            if spawn == 1: #TODO make enum rather, but this works temporarily 
+                scen = 'DL'
+            elif spawn == 2:
+                scen = 'DR'
+            elif spawn == 3:
+                scen = 'UL'
+            elif spawn == 4:
+                scen = 'UR'
+
+            self.wps = generate_random_waypoints_2d(n_wps,self.seg_length,scen,screen_x=screensize_x,screen_y=screensize_y)
+        else:
+            self.wps = generate_random_waypoints_2d(self.seg_length,'DL')
         self.predef_path = QPMI2D(self.wps)
         self.waypoint_index = 0
         self.lookahead = 75
+
+        #Make last waypoint the target
+        self.x_target = self.wps[-1][0]
+        self.y_target = self.wps[-1][1]
 
         #Rendering initialization
         self.screen_width = screensize_x
@@ -78,14 +98,6 @@ class Drone2dEnv(gym.Env):
         self.current_time_step = 0
         self.left_force = -1
         self.right_force = -1
-
-        #Generating target position
-        # self.x_target = self.wps[0][0]
-        # self.y_target = self.wps[0][1]
-        #Make last waypoint the target
-        self.x_target = self.wps[-1][0]
-        self.y_target = self.wps[-1][1]
-
 
         #Action and observation space
         min_action = np.array([-1, -1], dtype=np.float32)
@@ -441,8 +453,8 @@ class Drone2dEnv(gym.Env):
         closest_obs_y_dist = 0
         if self.obstacles == []:
             closest_obs_angle = 0 #TODO check if this will make the drone belive it is close to an obstacle when there is none there...
-            closest_obs_x_dist = self.screen_width #By setting it to the screen width, the drone will think it is far away from the obstacle :)
-            closest_obs_y_dist = self.screen_height
+            closest_obs_x_dist = 1 #By setting it to the screen width*2, the drone will think it is far away from the obstacle :)
+            closest_obs_y_dist = 1
         else:
             #Distance to closest obstacle
             closest_distance = 1000000
