@@ -93,14 +93,14 @@ class Drone2dEnv(gym.Env):
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
 
         #Max obs config 
-        # min_observation = np.array([-1, -1, -1, -1, -1, -1, -1, -1,-1,-1,-1,-1,-1,-1,-1,-1,-1], dtype=np.float32)
-        # max_observation = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1,1,1,1], dtype=np.float32)
-        # self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
+        min_observation = np.full(17, -1, dtype=np.float32)
+        max_observation = np.full(17, 1, dtype=np.float32)
+        self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
         #PF only config
-        min_observation = np.full(14, -1, dtype=np.float32)
-        max_observation = np.full(14, 1, dtype=np.float32)
-        self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
+        # min_observation = np.full(14, -1, dtype=np.float32)
+        # max_observation = np.full(14, 1, dtype=np.float32)
+        # self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
         #Debugging
         # self.vec = self.debug_path_angle()
@@ -195,38 +195,38 @@ class Drone2dEnv(gym.Env):
         #Taking in observations and calculation reward
         obs = self.get_observation()
         # max obs config
-        # drone_vel_x = obs[0]
-        # drone_vel_y = obs[1]
-        # drone_omega = obs[2]
-        # drone_alpha = (obs[3])*np.pi
-        # target_dist_x = self.invm1to1(obs[4],0,self.screen_width)
-        # target_dist_y = self.invm1to1(obs[5],0,self.screen_height)
-        # drone_pos_x = self.invm1to1(obs[6],0,self.screen_width)
-        # drone_pos_y = self.invm1to1(obs[7],0,self.screen_height)
-        # # 8 9 and 10 part of collision avoidance so only used if there are obstacles
-        # drone_vel_angle = obs[11]*np.pi
-        # closest_point_x = self.invm1to1(obs[12], 0, self.screen_width)
-        # closest_point_y = self.invm1to1(obs[13], 0, self.screen_height)
-        # look_ahead_x = self.invm1to1(obs[14], 0, self.screen_width)
-        # look_ahead_y = self.invm1to1(obs[15], 0, self.screen_height)
-        # look_ahead_angle = obs[16]*np.pi
-
-
-        #PF only config
         drone_vel_x = obs[0]
         drone_vel_y = obs[1]
         drone_omega = obs[2]
         drone_alpha = (obs[3])*np.pi
-        drone_pos_x = self.invm1to1(obs[4],0,self.screen_width)
-        drone_pos_y = self.invm1to1(obs[5],0,self.screen_height)
-        closest_point_x = self.invm1to1(obs[6], 0, self.screen_width)
-        closest_point_y = self.invm1to1(obs[7], 0, self.screen_height)
-        look_ahead_angle = obs[8]*np.pi
-        target_dist_x = self.invm1to1(obs[9],0,self.screen_width)
-        target_dist_y = self.invm1to1(obs[10],0,self.screen_height)
+        target_dist_x = self.invm1to1(obs[4],0,self.screen_width)
+        target_dist_y = self.invm1to1(obs[5],0,self.screen_height)
+        drone_pos_x = self.invm1to1(obs[6],0,self.screen_width)
+        drone_pos_y = self.invm1to1(obs[7],0,self.screen_height)
+        # 8 9 and 10 part of collision avoidance so only used if there are obstacles
         drone_vel_angle = obs[11]*np.pi
-        look_ahead_x = self.invm1to1(obs[12], 0, self.screen_width)
-        look_ahead_y = self.invm1to1(obs[13], 0, self.screen_height)
+        closest_point_x = self.invm1to1(obs[12], 0, self.screen_width)
+        closest_point_y = self.invm1to1(obs[13], 0, self.screen_height)
+        look_ahead_x = self.invm1to1(obs[14], 0, self.screen_width)
+        look_ahead_y = self.invm1to1(obs[15], 0, self.screen_height)
+        look_ahead_angle = obs[16]*np.pi
+
+
+        #PF only config
+        # drone_vel_x = obs[0]
+        # drone_vel_y = obs[1]
+        # drone_omega = obs[2]
+        # drone_alpha = (obs[3])*np.pi
+        # drone_pos_x = self.invm1to1(obs[4],0,self.screen_width)
+        # drone_pos_y = self.invm1to1(obs[5],0,self.screen_height)
+        # closest_point_x = self.invm1to1(obs[6], 0, self.screen_width)
+        # closest_point_y = self.invm1to1(obs[7], 0, self.screen_height)
+        # look_ahead_angle = obs[8]*np.pi
+        # target_dist_x = self.invm1to1(obs[9],0,self.screen_width)
+        # target_dist_y = self.invm1to1(obs[10],0,self.screen_height)
+        # drone_vel_angle = obs[11]*np.pi
+        # look_ahead_x = self.invm1to1(obs[12], 0, self.screen_width)
+        # look_ahead_y = self.invm1to1(obs[13], 0, self.screen_height)
         
         if drone_vel_angle < 0: drone_vel_angle += 2*np.pi
         if self.render_sim is True:
@@ -234,12 +234,11 @@ class Drone2dEnv(gym.Env):
             self.drone_pos = np.array([drone_pos_x, drone_pos_y])
 
         #Update so the lambda_path_adherance variable is dynamically lowered when the drone is close to an obstacle
-        #TODO more elegantly?
+        #TODO more elegantly? -> Make it dependent on the distance to the closest obstacle
         lambda_PA = 0.5
         lambda_CA = 1- lambda_PA
 
         #Collision avoidance reward
-        #TODO Check if there is a better way to do this
         reward_collision_avoidance = 0
         if self.obstacles == []:
             reward_collision_avoidance = 0
@@ -442,7 +441,7 @@ class Drone2dEnv(gym.Env):
         closest_obs_y_dist = 0
         if self.obstacles == []:
             closest_obs_angle = 0 #TODO check if this will make the drone belive it is close to an obstacle when there is none there...
-            closest_obs_x_dist = self.screen_width
+            closest_obs_x_dist = self.screen_width #By setting it to the screen width, the drone will think it is far away from the obstacle :)
             closest_obs_y_dist = self.screen_height
         else:
             #Distance to closest obstacle
@@ -490,10 +489,10 @@ class Drone2dEnv(gym.Env):
         look_ahead_angle = (look_ahead_angle/(np.pi)) #scales from -1 to 1
         
         #Max obs config
-        # return np.array([velocity_x, velocity_y, omega, alpha, target_distance_x, target_distance_y, pos_x, pos_y,closest_obs_x_dist,closest_obs_y_dist,closest_obs_angle,velocity_angle_b,closest_point_x,closest_point_y,lookahead_point_x,lookahead_point_y,look_ahead_angle])
+        return np.array([velocity_x, velocity_y, omega, alpha, target_distance_x, target_distance_y, pos_x, pos_y,closest_obs_x_dist,closest_obs_y_dist,closest_obs_angle,velocity_angle_b,closest_point_x,closest_point_y,lookahead_point_x,lookahead_point_y,look_ahead_angle])
         
         #PF only config
-        return np.array([velocity_x,velocity_y,omega,alpha,pos_x,pos_y,closest_point_x,closest_point_y,look_ahead_angle,target_distance_x,target_distance_y,velocity_angle_b,lookahead_point_x,lookahead_point_y])
+        # return np.array([velocity_x,velocity_y,omega,alpha,pos_x,pos_y,closest_point_x,closest_point_y,look_ahead_angle,target_distance_x,target_distance_y,velocity_angle_b,lookahead_point_x,lookahead_point_y])
     
     
     def render(self, mode='human', close=False):

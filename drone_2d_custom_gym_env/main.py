@@ -78,17 +78,17 @@ register(
     kwargs={'render_sim': False, 'render_path': True, 'render_shade': True,
             'shade_distance': 75, 'n_steps': 900, 'n_fall_steps': 5, 'change_target': False,
             'initial_throw': True, 
-            'path_segment_length':120, 'n_wps': 6,'screensize_x':800,'screensize_y':800 }
+            'path_segment_length':120, 'n_wps': 6,'screensize_x':1000,'screensize_y':1000}
 )
 
 #---------------------------------#
 mode = 'debug'
 
 mode = "train" 
-single_threaded = False #if True, only one environment will be used for training 
+single_threaded = False #When false, multithreading used
 
 mode = "eval"
-agent_path = 'ppo_agents/good_fast_PF_only.zip' 
+agent_path = 'ppo_agents/rl_model_1199856_steps.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
@@ -105,7 +105,7 @@ elif mode == "train":
     if single_threaded is True:
         num_cpu = 1
         env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
-                    shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True,screensize_x =1000, screensize_y=1000)
+                    shade_distance=70, n_steps=900, n_fall_steps=0, change_target=True, initial_throw=False,screensize_x =1000, screensize_y=1000)
         # Init callbacks #TODO make a smart folder structure
         tensorboard_logger = TensorboardLogger()
         checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
@@ -121,11 +121,11 @@ elif mode == "train":
         model.save('new_agent')
         env.close()
 
-    else:# Multi-Threading #TODO make this work
+    else:
         if __name__ == '__main__':
             print('CPU COUNT:', multiprocessing.cpu_count())
             max_cpu = multiprocessing.cpu_count()
-            num_cpu = max_cpu-4
+            num_cpu = max_cpu-2
 
             freeze_support()
             ctx = multiprocessing.get_context('spawn')
@@ -143,7 +143,7 @@ elif mode == "train":
 
             model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
-            model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
+            model.learn(total_timesteps=1800000,tb_log_name='PPO_PF', callback=callbacks)
             model.save('new_agent')
             env.close()
 
