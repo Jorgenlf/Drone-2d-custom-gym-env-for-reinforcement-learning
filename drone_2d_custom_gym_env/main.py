@@ -88,7 +88,7 @@ mode = "train"
 single_threaded = False #When false, multithreading used
 
 mode = "eval"
-agent_path = 'ppo_agents/maxObs_PFonly.zip' 
+agent_path = 'ppo_agents/PFCA_1.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 

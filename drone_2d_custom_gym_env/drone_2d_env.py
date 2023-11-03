@@ -161,8 +161,8 @@ class Drone2dEnv(gym.Env):
         #Generating obstacles
         n_obs = np.random.normal(1, 4)
         if n_obs < 0: n_obs = 0
-        # self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
-        self.obstacles = []
+        self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
+        # self.obstacles = []
         #TODO maybe add obstacle on path
 
         if self.render_sim is True:
