@@ -55,7 +55,7 @@ class Circle(Obstacle):
         space.add(self.obstacle_body, self.shape)
         
 
-def generate_obstacles_around_path(n, space, path:QPMI2D, mean, std):
+def generate_obstacles_around_path(n, space, path:QPMI2D, mean, std, onPath=False):
     obstacles = []
     color = (188, 72, 72)
     num_obstacles = 0
@@ -73,9 +73,14 @@ def generate_obstacles_around_path(n, space, path:QPMI2D, mean, std):
         #offset the obstacle from the path 90 degrees normal on the path
         obs_pos = obs_on_path_pos + dist*np.array([np.cos(path_angle-np.pi/2),np.sin(path_angle-np.pi/2)])
 
+        #TODO determine if obstacles are allowed to overlap
         obs_size = np.random.uniform(10,50) #uniform distribution of size
-        if np.linalg.norm(obs_pos - obs_on_path_pos) > obs_size+10: #10 is a safety margin #TODO determine if obstacles are allowed to overlap
+        if np.linalg.norm(obs_pos - obs_on_path_pos) > obs_size+10 and not onPath: #10 is a safety margin 
             obs = Circle(obs_pos[0],obs_pos[1],obs_size,color,space)    
+            obstacles.append(obs)
+            num_obstacles += 1
+        elif onPath:
+            obs = Circle(obs_on_path_pos[0],obs_on_path_pos[1],obs_size,color,space)    
             obstacles.append(obs)
             num_obstacles += 1
         else:

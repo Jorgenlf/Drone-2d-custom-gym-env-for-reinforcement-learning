@@ -72,6 +72,7 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
     set_random_seed(seed=seed)
     return _init
 
+#---------------------------------#
 register(
     id='drone-2d-custom-v0',
     entry_point='drone_2d_env:Drone2dEnv',
@@ -81,14 +82,15 @@ register(
             'path_segment_length':100, 'n_wps': 8,'screensize_x':1000,'screensize_y':1000}
 )
 
-#---------------------------------#
+total_timesteps = 1800000
+
 # mode = 'debug'
 
-mode = "train"
+# mode = "train"
 single_threaded = False #When false, multithreading used
 
 mode = "eval"
-agent_path = 'ppo_agents/PFCA_1.zip' 
+agent_path = 'ppo_agents/PFCA_9_final.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
@@ -117,7 +119,7 @@ elif mode == "train":
 
         model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
-        model.learn(total_timesteps=1800000,tb_log_name='PPO_tb_log', callback=callbacks)
+        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
         model.save('new_agent')
         env.close()
 
@@ -143,7 +145,7 @@ elif mode == "train":
 
             model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
-            model.learn(total_timesteps=1800000,tb_log_name='PPO_PF', callback=callbacks)
+            model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
             model.save('new_agent')
             env.close()
 
