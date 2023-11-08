@@ -66,7 +66,7 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = gym.make(env_id)
+        env = gym.make(env_id,random_path_spawn=True,render_sim=False,render_path=False,render_shade=False)
         env.reset() #seed=seed + rank #TODO should maybe pass this in to the reset fcn...
         return env
     set_random_seed(seed=seed)
@@ -90,14 +90,13 @@ total_timesteps = 1800000
 single_threaded = False #When false, multithreading used
 
 mode = "eval"
-agent_path = 'ppo_agents/PFCA_9_final.zip' 
+agent_path = 'ppo_agents/PFCA_14_final.zip' 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
 if mode == "debug":
     # Inspect an environment manually
-    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
-            shade_distance=70, n_steps=900, n_fall_steps=0, change_target=True, initial_throw=False)
+    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True)
 
     _manual_control(env)
     exit()
@@ -106,8 +105,7 @@ elif mode == "train":
     env = None
     if single_threaded is True:
         num_cpu = 1
-        env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=False, render_shade=False,
-                    shade_distance=70, n_steps=900, n_fall_steps=0, change_target=True, initial_throw=False,screensize_x =1000, screensize_y=1000)
+        env = gym.make('drone-2d-custom-v0')
         # Init callbacks #TODO make a smart folder structure
         tensorboard_logger = TensorboardLogger()
         checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
@@ -128,6 +126,7 @@ elif mode == "train":
             print('CPU COUNT:', multiprocessing.cpu_count())
             max_cpu = multiprocessing.cpu_count()
             num_cpu = max_cpu-2
+            print('Using',num_cpu,'CPUs')
 
             freeze_support()
             ctx = multiprocessing.get_context('spawn')
@@ -150,8 +149,7 @@ elif mode == "train":
             env.close()
 
 elif mode == "eval":
-    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,
-                shade_distance=70, n_steps=900, n_fall_steps=5, change_target=True, initial_throw=True)
+    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,n_steps = 1200,random_path_spawn=True)
 
     model = PPO.load(agent_path,env)
 
