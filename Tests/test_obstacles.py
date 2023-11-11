@@ -33,4 +33,4 @@ class Obstacle():
     def get_color(self):
         return self.color
 
-#RAther make a superclass obstacle and then make a subclass for each shape #TODO
+#RAther make a superclass obstacle and then make a subclass for each shape 

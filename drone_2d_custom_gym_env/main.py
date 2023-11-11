@@ -8,6 +8,7 @@ import multiprocessing
 
 from tensorboardlogger import *
 from drone_2d_env import * 
+from rl_config import rl_config, env_test_config, env_train_config
 
 from gym.envs.registration import register
 
@@ -66,46 +67,49 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
     :param rank: (int) index of the subprocess
     """
     def _init():
-        env = gym.make(env_id,random_path_spawn=True,render_sim=False,render_path=False,render_shade=False)
+        env = gym.make(env_id)
         env.reset() #seed=seed + rank #TODO should maybe pass this in to the reset fcn...
         return env
     set_random_seed(seed=seed)
     return _init
 
 #---------------------------------#
-register(
-    id='drone-2d-custom-v0',
-    entry_point='drone_2d_env:Drone2dEnv',
-    kwargs={'render_sim': False, 'render_path': True, 'render_shade': True,
-            'shade_distance': 75, 'n_steps': 900, 'n_fall_steps': 5, 'change_target': False,
-            'initial_throw': True, 'random_path_spawn':True,
-            'path_segment_length':100, 'n_wps': 8,'screensize_x':800,'screensize_y':800}
-)
+total_timesteps = rl_config['total_timesteps']
 
-total_timesteps = 2000000
-
-# mode = 'debug'
+mode = 'debug'
 
 # mode = "train"
-single_threaded = False #When false, multithreading used
+single_threaded = False #When false, multithreading used uses all but 2 cores
 
-mode = "eval"
-agent_path = 'ppo_agents/PFCA_18_final.zip' 
+# mode = "eval"
+agent_path = 'ppo_agents/PFCA_21_final.zip' 
+#PFCA_20 is PFCA 4 on homecomputer 
+#PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
 if mode == "debug":
     # Inspect an environment manually
-    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True)
+    register(
+        id='drone-2d-test',
+        entry_point='drone_2d_env:Drone2dEnv',
+        kwargs=env_test_config
+    )
 
+    env = gym.make('drone-2d-test')
     _manual_control(env)
     exit()
 
 elif mode == "train":
+    register(
+        id='drone-2d-train',
+        entry_point='drone_2d_env:Drone2dEnv',
+        kwargs=env_train_config
+    )
     env = None
     if single_threaded is True:
         num_cpu = 1
-        env = gym.make('drone-2d-custom-v0')
+        env = gym.make('drone-2d-train')
         # Init callbacks #TODO make a smart folder structure
         tensorboard_logger = TensorboardLogger()
         checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
@@ -130,7 +134,7 @@ elif mode == "train":
 
             freeze_support()
             ctx = multiprocessing.get_context('spawn')
-            env_id = 'drone-2d-custom-v0' 
+            env_id = 'drone-2d-train' 
             env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
             # Init callbacks #TODO make a smart folder structure
@@ -149,7 +153,12 @@ elif mode == "train":
             env.close()
 
 elif mode == "eval":
-    env = gym.make('drone-2d-custom-v0', render_sim=True, render_path=True, render_shade=True,n_steps = 1200,random_path_spawn=True)
+    register(
+        id='drone-2d-test',
+        entry_point='drone_2d_env:Drone2dEnv',
+        kwargs=env_test_config
+    )
+    env = gym.make('drone-2d-test')
 
     model = PPO.load(agent_path,env)
 
