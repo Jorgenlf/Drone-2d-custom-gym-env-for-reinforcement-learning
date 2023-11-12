@@ -69,10 +69,9 @@ class Drone2dEnv(gym.Env):
         self.wps = []
         self.seg_length = path_segment_length
         if random_path_spawn is True:
-            #random discrete value from 1 to 4
-            spawn = random.randint(1,4) #TODO rember to change back to 4
+            spawn = random.randint(1,4) 
             scen = ''
-            if spawn == 1: #TODO make enum rather, but this works temporarily 
+            if spawn == 1: #TODO make enum rather, but this works temporarily Also maybe make it a kwarg/parameter
                 scen = 'DL'
             elif spawn == 2:
                 scen = 'DR'
@@ -298,13 +297,19 @@ class Drone2dEnv(gym.Env):
             drone_closest_obs_angle = (np.arctan2(s_drone_closest_obs_angle, c_drone_closest_obs_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
 
             angle_diff = abs(np.rad2deg((drone_closest_obs_angle - drone_vel_angle + np.pi) % (2 * np.pi) - np.pi))
-            
             if self.render_sim is True:
                 self.obs_angle = drone_closest_obs_angle
 
             danger_range = 150
             danger_angle = 30 #TODO make these parameters
-            abs_min_rew = 1.5
+            inv_abs_min_rew = 2/3 #This scaling determines the inverse of minimum reward for the range and angle reward
+            #i.e now the minimum reward is -3/2 = -1.5. Could make it more intuitive by doing inv in equation below, but saves the inversion operation as it is done here.
+
+            #Update so the lambda_path_adherance variable is dynamically lowered the closer the drone is to an obstacle #TODO run a test with this
+            if (drone_closest_obs_dist < danger_range):
+                lambda_PA = (drone_closest_obs_dist/danger_range)/2
+                if lambda_PA < 0: lambda_PA = 0
+                lambda_CA = 1-lambda_PA
 
             reward_collision_avoidance = 0
             epsilon = 0.001
@@ -315,9 +320,9 @@ class Drone2dEnv(gym.Env):
                 # if reward_collision_avoidance <-3: reward_collision_avoidance = -3
                 # if reward_collision_avoidance > 0: reward_collision_avoidance = -3 #If drone inside obstacle reward becomes positive so set to -5
                 
-                #NEW #TODO THIS MUST BE FURTHER TESTED AND VERIFIED
-                range_rew = -(((danger_range+abs_min_rew*danger_range)/(drone_closest_obs_dist+abs_min_rew*danger_range)) -1)
-                angle_rew = -(((danger_angle+abs_min_rew*danger_angle)/(angle_diff+abs_min_rew*danger_angle)) -1)
+                #NEW 
+                range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
+                angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
                 reward_collision_avoidance = (range_rew + angle_rew)*2
 
                 self.draw_red_velocity = True
@@ -331,9 +336,10 @@ class Drone2dEnv(gym.Env):
                 # if reward_collision_avoidance < -3: reward_collision_avoidance = -3
                 # if reward_collision_avoidance > 0: reward_collision_avoidance = -3
 
-                #NEW #TODO THIS MUST BE FURTHER TESTED AND VERIFIED
-                range_rew = -(((danger_range+abs_min_rew*danger_range)/(drone_closest_obs_dist+abs_min_rew*danger_range)) -1)
-                angle_rew = -(((danger_angle+abs_min_rew*danger_angle)/(angle_diff+abs_min_rew*danger_angle)) -1)
+                #NEW
+                range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
+                angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
+                if angle_rew > 0: angle_rew = 0 #In this case the angle reward may become positive as anglediff may !< danger_angle
                 reward_collision_avoidance = range_rew + angle_rew
 
                 self.draw_red_velocity = False
@@ -344,13 +350,13 @@ class Drone2dEnv(gym.Env):
                 reward_collision_avoidance = 0
                 self.draw_red_velocity = False
                 self.draw_orange_obst_vec = False
-        print('reward_collision_avoidance', reward_collision_avoidance)
+        # print('reward_collision_avoidance', reward_collision_avoidance)
 
         #Path adherence reward
         closest_point_on_prepath = np.array([closest_point_x, closest_point_y])
         drone_pos = np.array([drone_pos_x, drone_pos_y])
         dist_from_path = np.linalg.norm(closest_point_on_prepath - drone_pos)
-        reward_path_adherence = -(2*(np.clip(dist_from_path, 0, 50) / 50) - 1)
+        reward_path_adherence = -(2*(np.clip(dist_from_path, 0, 50) / 50) - 1)*2 #TODO try and scale this up e.g start by multiplying with 2 so range[-2,2]
         # print('\nreward_path_adherence', reward_path_adherence)
 
         #Path progression reward

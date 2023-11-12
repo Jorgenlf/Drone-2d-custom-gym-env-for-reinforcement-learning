@@ -82,9 +82,14 @@ mode = 'debug'
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_21_final.zip' 
+agent_path = 'ppo_agents/PFCA_23_final.zip' 
 #PFCA_20 is PFCA 4 on homecomputer 
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
+#PFCA_22 is PFCA 6 on homecomputer using all 4 init positions and NEW CA reward function
+#PFCA_23 is PFCA 7 on homecomputer using all 4 init positions and NEW CA reward function and doubeled PA reward i.e. [-2,2] rather than [-1,1] follows tighter but crashes more often
+#Remains to try the lambda_CA and lambda_PA hyperparameters
+#TODO save the config dict as a file with the agent and make all hyperparameters accessible from the config dict file
+
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
 
