@@ -227,7 +227,7 @@ class QPMI2D():
         '''
         Calculate the parameter u of the path that is closest to the given position
         '''
-        #NEW #TODO fix so starting piece of path is correctly ignored UNDO WP_IDX = 0 if use this
+        #NEW 
         # if wp_idx == 0:
         #     x1 = 0.0
         #     x2 = 0.0

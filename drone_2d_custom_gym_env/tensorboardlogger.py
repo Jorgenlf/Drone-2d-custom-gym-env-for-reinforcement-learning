@@ -73,9 +73,10 @@ class TensorboardLogger(BaseCallback):
             avg_length = 0
             avg_collision_reward = 0
             avg_collision_avoidance_reward = 0
-            avg_close_to_target_reward = 0
             avg_path_adherence = 0
             avg_path_progression = 0
+            avg_reach_end_reward = 0
+            avg_agressive_alpha_reward = 0
             for info in infos:
                 avg_reward += info["reward"]
                 avg_length += info["env_steps"]
@@ -83,6 +84,8 @@ class TensorboardLogger(BaseCallback):
                 avg_collision_avoidance_reward += info["collision_avoidance_reward"]
                 avg_path_adherence += info["path_adherence"]
                 avg_path_progression += info["path_progression"]
+                avg_reach_end_reward = info['reach_end_reward'] 
+                avg_agressive_alpha_reward = info['agressive_alpha_reward'] 
 
 
             avg_reward /= n_done
@@ -91,6 +94,8 @@ class TensorboardLogger(BaseCallback):
             avg_collision_avoidance_reward /= n_done
             avg_path_adherence /= n_done
             avg_path_progression /= n_done
+            avg_reach_end_reward /= n_done
+            avg_agressive_alpha_reward /= n_done
 
             # Write to the tensorboard logger
             self.logger.record("episodes/avg_reward", avg_reward)
@@ -99,6 +104,8 @@ class TensorboardLogger(BaseCallback):
             self.logger.record("episodes/avg_collision_avoidance_reward", avg_collision_avoidance_reward)
             self.logger.record("episodes/avg_path_adherence_reward", avg_path_adherence)
             self.logger.record("episodes/avg_path_progression_reward", avg_path_progression)
+            self.logger.record("episodes/avg_reach_end_reward", avg_reach_end_reward)
+            self.logger.record("episodes/avg_agressive_alpha_reward", avg_agressive_alpha_reward)
 
         return True
 

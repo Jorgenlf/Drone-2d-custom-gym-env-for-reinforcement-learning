@@ -76,18 +76,21 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-mode = 'debug'
+# mode = 'debug'
 
-# mode = "train"
+mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-# mode = "eval"
-agent_path = 'ppo_agents/PFCA_23_final.zip' 
+mode = "eval"
+agent_path = 'ppo_agents/PFCA_26_29.zip' 
+
 #PFCA_20 is PFCA 4 on homecomputer 
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
 #PFCA_22 is PFCA 6 on homecomputer using all 4 init positions and NEW CA reward function
 #PFCA_23 is PFCA 7 on homecomputer using all 4 init positions and NEW CA reward function and doubeled PA reward i.e. [-2,2] rather than [-1,1] follows tighter but crashes more often
-#Remains to try the lambda_CA and lambda_PA hyperparameters
+#PFCA_24 is PFCA 8 on homecomputer using all 4 init positions and NEW CA reward function and doubled PA reward i.e. [-2,2] rather than [-1,1] uses the lambda_CA and lambda_PA hyperparameters. spoiled by obstacle spawning whole training
+#PFCA 25 is PFCA 9 --||-- but correct curriculum learning
+#PFCA 26 is PFCA 10 --||-- curriculum learning with random obsspawn after 2M timesteps
 #TODO save the config dict as a file with the agent and make all hyperparameters accessible from the config dict file
 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
@@ -126,6 +129,9 @@ elif mode == "train":
 
         model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
+        with open('logs/rl_config.txt', 'w') as file:
+            file.write(str(env_train_config))
+
         model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
         model.save('new_agent')
         env.close()
@@ -142,7 +148,6 @@ elif mode == "train":
             env_id = 'drone-2d-train' 
             env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
-            # Init callbacks #TODO make a smart folder structure
             tensorboard_logger = TensorboardLogger()
             checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
                                                     save_path="logs",
@@ -152,6 +157,9 @@ elif mode == "train":
             callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
             model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
+
+            with open('logs/env_train_config.txt', 'w') as file:
+                file.write(str(env_train_config))
 
             model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
             model.save('new_agent')
