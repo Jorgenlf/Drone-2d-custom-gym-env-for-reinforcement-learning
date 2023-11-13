@@ -129,6 +129,14 @@ class Drone2dEnv(gym.Env):
         self.LA_in_last_wp = False
         self.done = False
         self.info = {}
+        self.info['reward'] = 0
+        self.info['collision_avoidance_reward'] = 0
+        self.info['path_adherence'] = 0
+        self.info["path_progression"] = 0
+        self.info['collision_reward'] = 0
+        self.info['reach_end_reward'] = 0
+        self.info['agressive_alpha_reward'] = 0
+
         self.current_time_step = 0
         self.left_force = -1
         self.right_force = -1
@@ -238,7 +246,7 @@ class Drone2dEnv(gym.Env):
         if self.first_step is True:
             if self.render_sim is True and self.render_path is True: self.add_postion_to_drop_path()
             if self.render_sim is True and self.render_shade is True: self.add_drone_shade()
-            # self.info = self.initial_movement()
+
 
         self.left_force = (action[0]/2 + 0.5) * self.force_scale
         self.right_force = (action[1]/2 + 0.5) * self.force_scale
@@ -606,6 +614,33 @@ class Drone2dEnv(gym.Env):
         # for v in self.vec:
         #     pygame.draw.line(self.screen, (170, 0, 170), (v[0], self.screen_height-v[1]), (v[2], self.screen_height-v[3]), 4)
         #Debugging --------------------
+
+        #Draw the reward  as text in top left corner
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        text = font.render('Total reward: ' + str(round(self.info['reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, 0)
+        self.screen.blit(text, textRect)
+        #Draw the collision avoidance reward below the reward
+        text = font.render('Collision avoidance: ' + str(round(self.info['collision_avoidance_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, 32)
+        self.screen.blit(text, textRect)
+        #Draw the path adherence reward below the collision avoidance reward
+        text = font.render('Path adherence: ' + str(round(self.info['path_adherence'], 2)), True, (0, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, 64)
+        self.screen.blit(text, textRect)
+        #Draw the path progression reward below the path adherence reward
+        text = font.render('Path progression: ' + str(round(self.info['path_progression'], 2)), True, (0, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, 96)
+        self.screen.blit(text, textRect)
+        #Draw the agressive alpha reward below the path progression reward
+        text = font.render('Agressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, 128)
+        self.screen.blit(text, textRect)
 
         #Drawing predefined path
         predef_path_coords = self.predef_path.get_path_coord()

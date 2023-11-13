@@ -76,12 +76,12 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-# mode = 'debug'
+mode = 'debug'
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-mode = "eval"
+# mode = "eval"
 agent_path = 'ppo_agents/PFCA_see_3_obs_1_34.zip' 
 
 #PFCA_20 is PFCA 4 on homecomputer 
