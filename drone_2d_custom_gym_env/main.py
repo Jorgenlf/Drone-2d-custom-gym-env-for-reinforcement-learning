@@ -78,11 +78,11 @@ total_timesteps = rl_config['total_timesteps']
 
 # mode = 'debug'
 
-mode = "train"
+# mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 mode = "eval"
-agent_path = 'ppo_agents/PFCA_26_29.zip' 
+agent_path = 'ppo_agents/PFCA_see_3_obs_1_34.zip' 
 
 #PFCA_20 is PFCA 4 on homecomputer 
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
@@ -91,7 +91,7 @@ agent_path = 'ppo_agents/PFCA_26_29.zip'
 #PFCA_24 is PFCA 8 on homecomputer using all 4 init positions and NEW CA reward function and doubled PA reward i.e. [-2,2] rather than [-1,1] uses the lambda_CA and lambda_PA hyperparameters. spoiled by obstacle spawning whole training
 #PFCA 25 is PFCA 9 --||-- but correct curriculum learning
 #PFCA 26 is PFCA 10 --||-- curriculum learning with random obsspawn after 2M timesteps
-#TODO save the config dict as a file with the agent and make all hyperparameters accessible from the config dict file
+#PFCA_see_3_obs_1_34.zip sees 3 obstacles performs fairly well
 
 continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
 #---------------------------------#
@@ -132,7 +132,10 @@ elif mode == "train":
         with open('logs/rl_config.txt', 'w') as file:
             file.write(str(env_train_config))
 
-        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
+        with open('logs/rl_config.txt', 'w') as file:
+            file.write(str(rl_config))
+
+        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_k_obs', callback=callbacks)
         model.save('new_agent')
         env.close()
 
@@ -160,8 +163,11 @@ elif mode == "train":
 
             with open('logs/env_train_config.txt', 'w') as file:
                 file.write(str(env_train_config))
+            
+            with open('logs/rl_config.txt', 'w') as file:
+                file.write(str(rl_config))
 
-            model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA', callback=callbacks)
+            model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_k_obs', callback=callbacks)
             model.save('new_agent')
             env.close()
 

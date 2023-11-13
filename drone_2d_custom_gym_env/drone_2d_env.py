@@ -59,6 +59,7 @@ class Drone2dEnv(gym.Env):
         self.AA_angle = kwargs['AA_angle']
         self.AA_band = kwargs['AA_band']
         self.rew_AA = kwargs['rew_AA']
+        self.k_obs = 3 #Number of obstacles the drone has angle and distance to must write more code to make this dynamic
 
         self.kwargs = kwargs
 
@@ -140,7 +141,7 @@ class Drone2dEnv(gym.Env):
         self.max_time_steps = n_steps
         self.stabilisation_delay = n_fall_steps
         self.drone_shade_distance = shade_distance
-        self.froce_scale = 1000
+        self.force_scale = 1000
         self.initial_throw = initial_throw
         self.change_target = change_target
 
@@ -150,8 +151,8 @@ class Drone2dEnv(gym.Env):
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
 
         #Max obs config 
-        min_observation = np.full(21, -1, dtype=np.float32)
-        max_observation = np.full(21, 1, dtype=np.float32)
+        min_observation = np.full(25, -1, dtype=np.float32)
+        max_observation = np.full(25, 1, dtype=np.float32)
         self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
         #Debugging
@@ -197,7 +198,12 @@ class Drone2dEnv(gym.Env):
         self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
         self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
-       
+
+        damping_factor = 0.9
+        #Amount of simple damping to apply to the space.
+        # A value of 0.9 means that each body will lose 10% of its velocity per second. Defaults to 1. Like gravity, it can be overridden on a per body basis.
+        for body in self.space.bodies:
+            body.damping = damping_factor
 
         #Curriculum 
         if self.sim_num < 800000:
@@ -216,6 +222,9 @@ class Drone2dEnv(gym.Env):
             if n_obs < 0: n_obs = 2
             self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
 
+        if self.k_obs > len(self.obstacles):
+            self.k_obs = len(self.obstacles)
+
         if self.render_sim is True:
             self.drone_pos = np.array([x1,y1])
             self.look_ahead_point = self.predef_path.get_lookahead_point(self.drone_pos, self.lookahead)
@@ -231,8 +240,8 @@ class Drone2dEnv(gym.Env):
             if self.render_sim is True and self.render_shade is True: self.add_drone_shade()
             # self.info = self.initial_movement()
 
-        self.left_force = (action[0]/2 + 0.5) * self.froce_scale
-        self.right_force = (action[1]/2 + 0.5) * self.froce_scale
+        self.left_force = (action[0]/2 + 0.5) * self.force_scale
+        self.right_force = (action[1]/2 + 0.5) * self.force_scale
 
         self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, self.left_force), (-self.drone_radius, 0))
         self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, self.right_force), (self.drone_radius, 0))
@@ -264,15 +273,15 @@ class Drone2dEnv(gym.Env):
         drone_pos_x = self.invm1to1(obs[6],0,self.screen_width)
         drone_pos_y = self.invm1to1(obs[7],0,self.screen_height)
         # 8, 9, 10, 11 and 12 part of collision avoidance so only used if there are obstacles
-        s_drone_vel_angle = obs[13]*np.pi
-        c_drone_vel_angle = obs[14]*np.pi
+        s_drone_vel_angle = obs[17]*np.pi
+        c_drone_vel_angle = obs[18]*np.pi
         drone_vel_angle = (np.arctan2(s_drone_vel_angle, c_drone_vel_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
-        closest_point_x = self.invm1to1(obs[15], 0, self.screen_width)
-        closest_point_y = self.invm1to1(obs[16], 0, self.screen_height)
-        look_ahead_x = self.invm1to1(obs[17], 0, self.screen_width)
-        look_ahead_y = self.invm1to1(obs[18], 0, self.screen_height)
-        s_look_ahead_angle = obs[19]
-        c_look_ahead_angle = obs[20]
+        closest_point_x = self.invm1to1(obs[19], 0, self.screen_width)
+        closest_point_y = self.invm1to1(obs[20], 0, self.screen_height)
+        look_ahead_x = self.invm1to1(obs[21], 0, self.screen_width)
+        look_ahead_y = self.invm1to1(obs[22], 0, self.screen_height)
+        s_look_ahead_angle = obs[23]
+        c_look_ahead_angle = obs[24]
         look_ahead_angle = (np.arctan2(s_look_ahead_angle, c_look_ahead_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
     
         if self.render_sim is True:
@@ -294,11 +303,21 @@ class Drone2dEnv(gym.Env):
             # lambda_PA = 1
             # lambda_CA = 1 - lambda_PA
         else:
-            drone_closest_obs_dist_x = self.invm1to1(obs[8], 0, self.screen_width)
-            drone_closest_obs_dist_y = self.invm1to1(obs[9], 0, self.screen_height)
-            drone_closest_obs_dist = self.invm1to1(obs[10], 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
-            s_drone_closest_obs_angle = obs[11]
-            c_drone_closest_obs_angle = obs[12]
+            # drone_closest_obs_dist_x = self.invm1to1(obs[8], 0, self.screen_width)
+            # drone_closest_obs_dist_y = self.invm1to1(obs[9], 0, self.screen_height)
+            drone_closest_obs_dist = self.invm1to1(obs[8], 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
+            s_drone_closest_obs_angle = obs[9]
+            c_drone_closest_obs_angle = obs[10]
+
+            #These couldve been used in the reward fcn as well, but per now mainly used to keep structure of obs and let agent see more obstacles
+            next_closest_obs_dist = self.invm1to1(obs[11], 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
+            s_next_closest_obs_angle = obs[12]
+            c_next_closest_obs_angle = obs[13]
+
+            n2_closest_obs_dist = self.invm1to1(obs[14], 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
+            s_n2_closest_obs_angle = obs[15]
+            c_n2_closest_obs_angle = obs[16]
+
             drone_closest_obs_angle = (np.arctan2(s_drone_closest_obs_angle, c_drone_closest_obs_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
 
             angle_diff = abs(np.rad2deg((drone_closest_obs_angle - drone_vel_angle + np.pi) % (2 * np.pi) - np.pi))
@@ -405,27 +424,22 @@ class Drone2dEnv(gym.Env):
 
         return obs, reward, self.done, self.info
 
-    #Per now unused but will later be called in get_observation to get the distance to the k nearest obstacles
-    #TODO implement this so The agent can see the k nearest obstacles.
-    #Give obs pos? give distance? give distance and angle?
-    # def get_obstacle_distances(self,k):
-        
-    #     obstacle_distances = []
-    #     closest_distance = np.inf
-    #     closest_obs_index = 0
+    def get_obstacle_distances(self,k):
 
-    #     for i, obstacle in enumerate(self.obstacles):
-    #         distance,_,_ = self.distance_between_shapes(self.drone.frame_shape, obstacle.shape)
-    #         obstacle_distances.append(distance)
-            
-    #         if distance < closest_distance:
-    #             closest_distance = distance
-    #             closest_obs_index = i
+        closest_distance = np.inf
+        closest_obs_dict = {}
 
-    #     obstacle_distances.sort()
-    #     obstacle_distances = obstacle_distances[:k]
+        for i, obstacle in enumerate(self.obstacles):
+            distance,_,_ = self.distance_between_shapes(self.drone.frame_shape, obstacle.shape)
+            closest_obs_dict[i] = distance
 
-    #     return obstacle_distances,closest_obs_index
+        #Sort dictionary by value so closest obstacle is first
+        sorted_obs_dict = {k: v for k, v in sorted(closest_obs_dict.items(), key=lambda item: item[1])}
+
+        #Get the k closest obstacles by slicing dictionary
+        sorted_obs_dict = dict(list(sorted_obs_dict.items())[0:k])
+
+        return sorted_obs_dict
 
     def get_observation(self):
         # Drone velocities
@@ -455,38 +469,86 @@ class Drone2dEnv(gym.Env):
 
         alphadrone = self.drone.frame_shape.body.angle
 
-        closest_obs_x_dist = 0
-        closest_obs_y_dist = 0
-        closest_obs_distance = 0
+
         if self.obstacles == []:
-            closest_obs_angle = 0 
-            sin_closest_obs_angle = np.sin(closest_obs_angle)
-            cos_closest_obs_angle = np.cos(closest_obs_angle)
-            closest_obs_x_dist = 1 
-            closest_obs_y_dist = 1
             closest_obs_distance = 1
+            sin_closest_obs_angle = 0
+            cos_closest_obs_angle = 0
+            next_closest_obs_distance = 1
+            next_sin_closest_obs_angle = 0
+            next_cos_closest_obs_angle = 0
+            n2_closest_obs_distance = 1
+            n2_sin_closest_obs_angle = 0
+            n2_cos_closest_obs_angle = 0
         else:
             #Distance to closest obstacle old still here to get index of closest obstacle
-            closest_distance = 1000000
-            for i, obstacle in enumerate(self.obstacles):
-                distance = np.sqrt((x - obstacle.x_pos)**2 + (y - obstacle.y_pos)**2)
-                if distance < closest_distance:
-                    closest_distance = distance
-                    self.closest_obs_index = i #TODO make list of k closest obstacles rather.
+            closests_obstacles = self.get_obstacle_distances(self.k_obs)
+            indexes = list(closests_obstacles.keys())
+            euc_dists = list(closests_obstacles.values())
 
-            closest_obs_distance,closest_obs_x_dist,closest_obs_y_dist = self.distance_between_shapes(self.drone.frame_shape, self.obstacles[self.closest_obs_index].shape)
-            closest_obs_x_dist = self.m1to1(closest_obs_x_dist, 0, self.screen_width)
-            closest_obs_y_dist = self.m1to1(closest_obs_y_dist, 0, self.screen_height)
-            closest_obs_distance = self.m1to1(closest_obs_distance, 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
-            #TODO decide if x and y necessary or if distance + angle is enough
+            self.closest_obs_index = indexes[0]
 
-            #Angle to closest obstacle
-            closest_obs_angle = np.arctan2(y - self.obstacles[self.closest_obs_index].y_pos, x - self.obstacles[self.closest_obs_index].x_pos) #range -pi to pi
-            #body frame
-            closest_obs_angle = closest_obs_angle - alphadrone - np.pi
-            closest_obs_angle = ssa(closest_obs_angle)
-            sin_closest_obs_angle = np.sin(closest_obs_angle) #Pass out the sin and cos rather than just the angle to avoid jumps from -1 to 1.
-            cos_closest_obs_angle = np.cos(closest_obs_angle)
+            k_normed_obs_dists = []
+            k_sin_obs_angles = []
+            k_cos_obs_angles = []
+
+            #Assuming k = 3 always
+            closest_obs_distance = 1
+            sin_closest_obs_angle = 0
+            cos_closest_obs_angle = 0
+            next_closest_obs_distance = 1
+            next_sin_closest_obs_angle = 0
+            next_cos_closest_obs_angle = 0
+            n2_closest_obs_distance = 1
+            n2_sin_closest_obs_angle = 0
+            n2_cos_closest_obs_angle = 0
+
+            for i in range(self.k_obs):
+                k_normed_obs_dists.append(self.m1to1(euc_dists[i], 0, np.sqrt(self.screen_width**2 + self.screen_height**2)))
+                angle = np.arctan2(y - self.obstacles[indexes[i]].y_pos, x - self.obstacles[indexes[i]].x_pos) #range -pi to pi
+                angle = ssa(angle - alphadrone - np.pi)
+                k_sin_obs_angles.append(np.sin(angle))
+                k_cos_obs_angles.append(np.cos(angle))
+            
+            if len(self.obstacles) == 1:
+                closest_obs_distance = k_normed_obs_dists[0]
+                sin_closest_obs_angle = k_sin_obs_angles[0]
+                cos_closest_obs_angle = k_cos_obs_angles[0]
+            elif len(self.obstacles) == 2:
+                closest_obs_distance = k_normed_obs_dists[0]
+                sin_closest_obs_angle = k_sin_obs_angles[0]
+                cos_closest_obs_angle = k_cos_obs_angles[0]
+                next_closest_obs_distance = k_normed_obs_dists[1]
+                next_sin_closest_obs_angle = k_sin_obs_angles[1]
+                next_cos_closest_obs_angle = k_cos_obs_angles[1]
+            else:
+                closest_obs_distance = k_normed_obs_dists[0]
+                sin_closest_obs_angle = k_sin_obs_angles[0]
+                cos_closest_obs_angle = k_cos_obs_angles[0]
+                next_closest_obs_distance = k_normed_obs_dists[1]
+                next_sin_closest_obs_angle = k_sin_obs_angles[1]
+                next_cos_closest_obs_angle = k_cos_obs_angles[1]
+                n2_closest_obs_distance = k_normed_obs_dists[2]
+                n2_sin_closest_obs_angle = k_sin_obs_angles[2]
+                n2_cos_closest_obs_angle = k_cos_obs_angles[2]
+ 
+            #OLD
+            # closest_obs_distance = euc_dists[0]
+            # closest_obs_x_dist = x_dists[0]
+            # closest_obs_y_dist = ydists[0]
+            # # closest_obs_distance,closest_obs_x_dist,closest_obs_y_dist = self.distance_between_shapes(self.drone.frame_shape, self.obstacles[self.closest_obs_index].shape)
+            # closest_obs_x_dist = self.m1to1(closest_obs_x_dist, 0, self.screen_width)
+            # closest_obs_y_dist = self.m1to1(closest_obs_y_dist, 0, self.screen_height)
+            # closest_obs_distance = self.m1to1(closest_obs_distance, 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
+            # #TODO decide if x and y necessary or if distance + angle is enough
+
+            # #Angle to closest obstacle
+            # closest_obs_angle = np.arctan2(y - self.obstacles[self.closest_obs_index].y_pos, x - self.obstacles[self.closest_obs_index].x_pos) #range -pi to pi
+            # #body frame
+            # closest_obs_angle = closest_obs_angle - alphadrone - np.pi
+            # closest_obs_angle = ssa(closest_obs_angle)
+            # sin_closest_obs_angle = np.sin(closest_obs_angle) #Pass out the sin and cos rather than just the angle to avoid jumps from -1 to 1.
+            # cos_closest_obs_angle = np.cos(closest_obs_angle)
 
         #Velocity angle
         velocity_x_, velocity_y_ = self.drone.frame_shape.body.velocity_at_local_point((0, 0)) #Velocity in body frame
@@ -524,7 +586,14 @@ class Drone2dEnv(gym.Env):
         s_look_ahead_angle = np.sin(look_ahead_angle)
         c_look_ahead_angle = np.cos(look_ahead_angle)
         
-        return np.array([velocity_x, velocity_y, omega, alpha, target_distance_x, target_distance_y, pos_x, pos_y,closest_obs_x_dist,closest_obs_y_dist,closest_obs_distance,sin_closest_obs_angle,cos_closest_obs_angle,sin_velocity_angle_b,cos_velocity_angle_b,closest_point_x,closest_point_y,lookahead_point_x,lookahead_point_y,s_look_ahead_angle,c_look_ahead_angle])
+        return np.array([velocity_x, velocity_y, 
+                         omega, alpha, 
+                         target_distance_x, target_distance_y, 
+                         pos_x, pos_y,
+                         closest_obs_distance,sin_closest_obs_angle,cos_closest_obs_angle, next_closest_obs_distance, next_sin_closest_obs_angle, next_cos_closest_obs_angle, n2_closest_obs_distance, n2_sin_closest_obs_angle, n2_cos_closest_obs_angle,
+                         sin_velocity_angle_b,cos_velocity_angle_b,
+                         closest_point_x,closest_point_y,
+                         lookahead_point_x,lookahead_point_y,s_look_ahead_angle,c_look_ahead_angle])
     
     def render(self, mode='human', close=False):
         if self.render_sim is False: return
@@ -592,14 +661,14 @@ class Drone2dEnv(gym.Env):
         #Drawing vectors of motor forces
         vector_scale = 0.05
         l_x_1, l_y_1 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, 0))
-        l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.froce_scale*vector_scale))
+        l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.force_scale*vector_scale))
         pygame.draw.line(self.screen, (179,179,179), (l_x_1, self.screen_height-l_y_1), (l_x_2, self.screen_height-l_y_2), 4)
 
         l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.left_force*vector_scale))
         pygame.draw.line(self.screen, (255,0,0), (l_x_1, self.screen_height-l_y_1), (l_x_2, self.screen_height-l_y_2), 4)
 
         r_x_1, r_y_1 = self.drone.frame_shape.body.local_to_world((self.drone_radius, 0))
-        r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.froce_scale*vector_scale))
+        r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.force_scale*vector_scale))
         pygame.draw.line(self.screen, (179,179,179), (r_x_1, self.screen_height-r_y_1), (r_x_2, self.screen_height-r_y_2), 4)
 
         r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.right_force*vector_scale))

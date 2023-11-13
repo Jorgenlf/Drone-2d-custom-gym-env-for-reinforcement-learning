@@ -3,7 +3,7 @@ import numpy as np
 # This file contains the configuration for the RL agent and the environment
 
 rl_config = {
-    'total_timesteps'       : 3000000,
+    'total_timesteps'       : 4000000,
 }
 
 env_train_config = {
@@ -17,10 +17,10 @@ env_train_config = {
     'initial_throw'         : True,
     'random_path_spawn'     : True,
     'path_segment_length'   : 100,
-    'n_wps'                 : 9,
-    'screensize_x'          : 1000,
-    'screensize_y'          : 1000,
-    'lookahead'             : 200,
+    'n_wps'                 : 12,
+    'screensize_x'          : 1300,
+    'screensize_y'          : 1300,
+    'lookahead'             : 220,
     'spawn_corners'         : (1,4), #(DL,DR,UL,UR) 1,4 gives all corners 1,1 gives only bottom left corner 4,4 gives only top right corner 
     'danger_range'          : 150,
     'danger_angle'          : 30,
