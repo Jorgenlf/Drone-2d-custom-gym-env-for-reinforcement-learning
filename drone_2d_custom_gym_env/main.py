@@ -76,9 +76,9 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-# mode = 'debug'
+mode = 'debug'
 
-mode = "train"
+# mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
