@@ -76,13 +76,13 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-mode = 'debug'
+# mode = 'debug'
 
-# mode = "train"
+mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_1_34.zip' 
+agent_path = 'ppo_agents/PFCA_see_3_obs_2_final.zip' 
 
 #PFCA_20 is PFCA 4 on homecomputer 
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
@@ -135,7 +135,7 @@ elif mode == "train":
         with open('logs/rl_config.txt', 'w') as file:
             file.write(str(rl_config))
 
-        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_k_obs', callback=callbacks)
+        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_3_obs', callback=callbacks)
         model.save('new_agent')
         env.close()
 
@@ -167,7 +167,7 @@ elif mode == "train":
             with open('logs/rl_config.txt', 'w') as file:
                 file.write(str(rl_config))
 
-            model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_k_obs', callback=callbacks)
+            model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_3_obs', callback=callbacks)
             model.save('new_agent')
             env.close()
 

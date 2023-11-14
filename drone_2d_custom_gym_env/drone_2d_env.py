@@ -123,6 +123,7 @@ class Drone2dEnv(gym.Env):
             self.closest_point = np.array([0,0])
             self.drone_alpha = 0
             self.drone_vel = np.array([0,0])
+            self.closest_p_angle = 0
 
         #Initial values
         self.first_step = True
@@ -159,8 +160,8 @@ class Drone2dEnv(gym.Env):
         self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
 
         #Max obs config 
-        min_observation = np.full(25, -1, dtype=np.float32)
-        max_observation = np.full(25, 1, dtype=np.float32)
+        min_observation = np.full(27, -1, dtype=np.float32)
+        max_observation = np.full(27, 1, dtype=np.float32)
         self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
         #Debugging
@@ -290,6 +291,9 @@ class Drone2dEnv(gym.Env):
         look_ahead_y = self.invm1to1(obs[22], 0, self.screen_height)
         s_look_ahead_angle = obs[23]
         c_look_ahead_angle = obs[24]
+        s_closest_point_angle = obs[25] #Used for drawing and letting drone know where to go
+        c_closest_point_angle = obs[26]
+        closest_p_angle = (np.arctan2(s_closest_point_angle, c_closest_point_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
         look_ahead_angle = (np.arctan2(s_look_ahead_angle, c_look_ahead_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
     
         if self.render_sim is True:
@@ -300,6 +304,7 @@ class Drone2dEnv(gym.Env):
             self.closest_point = np.array([closest_point_x, closest_point_y])
             self.look_ahead_point = np.array([look_ahead_x, look_ahead_y])
             self.look_ahead_angle = look_ahead_angle
+            self.closest_p_angle = closest_p_angle
 
         lambda_PA = 1
         lambda_CA = 1
@@ -593,6 +598,13 @@ class Drone2dEnv(gym.Env):
         look_ahead_angle = ssa(look_ahead_angle_b_hori - alphadrone)
         s_look_ahead_angle = np.sin(look_ahead_angle)
         c_look_ahead_angle = np.cos(look_ahead_angle)
+
+        #Angle between drone and closest point on path
+        closest_point_body = np.matmul(R_w_b(alphadrone), closest_point - np.array([x,y]))
+        closest_point_angle_b_hori = np.arctan2(closest_point_body[1],closest_point_body[0]) #range -pi to pi
+        closest_point_angle = ssa(closest_point_angle_b_hori - alphadrone)
+        s_closest_point_angle = np.sin(closest_point_angle)
+        c_closest_point_angle = np.cos(closest_point_angle)
         
         return np.array([velocity_x, velocity_y, 
                          omega, alpha, 
@@ -601,7 +613,8 @@ class Drone2dEnv(gym.Env):
                          closest_obs_distance,sin_closest_obs_angle,cos_closest_obs_angle, next_closest_obs_distance, next_sin_closest_obs_angle, next_cos_closest_obs_angle, n2_closest_obs_distance, n2_sin_closest_obs_angle, n2_cos_closest_obs_angle,
                          sin_velocity_angle_b,cos_velocity_angle_b,
                          closest_point_x,closest_point_y,
-                         lookahead_point_x,lookahead_point_y,s_look_ahead_angle,c_look_ahead_angle])
+                         lookahead_point_x,lookahead_point_y,s_look_ahead_angle,c_look_ahead_angle,
+                         s_closest_point_angle,c_closest_point_angle])
     
     def render(self, mode='human', close=False):
         if self.render_sim is False: return
@@ -616,7 +629,8 @@ class Drone2dEnv(gym.Env):
         #Debugging --------------------
 
         #Draw the reward  as text in top left corner
-        font = pygame.font.Font('freesansbold.ttf', 32)
+        font_size = 16
+        font = pygame.font.Font('freesansbold.ttf', font_size)
         text = font.render('Total reward: ' + str(round(self.info['reward'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
         textRect.topleft = (0, 0)
@@ -624,22 +638,22 @@ class Drone2dEnv(gym.Env):
         #Draw the collision avoidance reward below the reward
         text = font.render('Collision avoidance: ' + str(round(self.info['collision_avoidance_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
-        textRect.topleft = (0, 32)
+        textRect.topleft = (0, font_size)
         self.screen.blit(text, textRect)
         #Draw the path adherence reward below the collision avoidance reward
         text = font.render('Path adherence: ' + str(round(self.info['path_adherence'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
-        textRect.topleft = (0, 64)
+        textRect.topleft = (0, font_size*2)
         self.screen.blit(text, textRect)
         #Draw the path progression reward below the path adherence reward
         text = font.render('Path progression: ' + str(round(self.info['path_progression'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
-        textRect.topleft = (0, 96)
+        textRect.topleft = (0, font_size*3)
         self.screen.blit(text, textRect)
         #Draw the agressive alpha reward below the path progression reward
         text = font.render('Agressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
-        textRect.topleft = (0, 128)
+        textRect.topleft = (0, font_size*4)
         self.screen.blit(text, textRect)
 
         #Drawing predefined path
@@ -652,12 +666,15 @@ class Drone2dEnv(gym.Env):
         #Draw final wp:
         pygame.draw.circle(self.screen, (0, 0, 0), (self.wps[-1][0], self.screen_height-self.wps[-1][1]), 5)
 
-        #Drawing closest point on path
-        closest_point = (self.closest_point[0], self.screen_height-self.closest_point[1])
-        pygame.draw.circle(self.screen, (0, 0, 255), closest_point, 5)
 
         drone_x, drone_y = self.drone_pos
         alpha = self.drone_alpha
+
+        #Drawing closest point on path, vector between drone and closest point on path and angle
+        pygame.draw.circle(self.screen, (0, 0, 255), (self.closest_point[0], self.screen_height-self.closest_point[1]), 5)
+        pygame.draw.line(self.screen, (0, 0, 255), (drone_x, self.screen_height-drone_y), (self.closest_point[0], self.screen_height-self.closest_point[1]), 4)
+        pygame.draw.arc(self.screen, (0, 0, 255), (drone_x-50*2/3, self.screen_height-drone_y-50*2/3, 100*2/3, 100*2/3), alpha, self.closest_p_angle, 3)
+
 
         #Drawing vector between drone and lookahead point and angle
         pygame.draw.line(self.screen, (0, 150, 150), (drone_x, self.screen_height-drone_y), (self.look_ahead_point[0], self.screen_height-self.look_ahead_point[1]), 4)

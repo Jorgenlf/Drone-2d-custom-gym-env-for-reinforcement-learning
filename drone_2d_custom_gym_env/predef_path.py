@@ -304,7 +304,7 @@ class QPMI2D():
         return quadratic_path
 
 
-def generate_random_waypoints_2d(nwaypoints, distance, scen,obstacles = None, drone_radius = None,screen_x = None,screen_y = None):
+def generate_random_waypoints_2d(nwaypoints, distance, scen, screen_x = None,screen_y = None):
     '''
     Generate random waypoints in 2D space
     scen string determines what kind of waypoints to generate
