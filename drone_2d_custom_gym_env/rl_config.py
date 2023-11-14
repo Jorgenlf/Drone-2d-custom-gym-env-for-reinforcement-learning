@@ -17,16 +17,16 @@ env_train_config = {
     'initial_throw'         : True,
     'random_path_spawn'     : True,
     'path_segment_length'   : 100,
-    'n_wps'                 : 7,
-    'screensize_x'          : 800,
-    'screensize_y'          : 800,
+    'n_wps'                 : 11, # Rule of thumb (screen size / 100)-1 
+    'screensize_x'          : 1200,
+    'screensize_y'          : 1200,
     'lookahead'             : 220,
     'spawn_corners'         : (1,4), #(DL,DR,UL,UR) 1,4 gives all corners 1,1 gives only bottom left corner 4,4 gives only top right corner 
-    'danger_range'          : 150,
+    'danger_range'          : 350,
     'danger_angle'          : 30,
-    'abs_inv_CA_min_rew'    : 1/2, #1/2 -> -2 is min reward per CA fcn--> tot -4
+    'abs_inv_CA_min_rew'    : 1/5, #1/2 -> -2 is min reward per CA fcn--> tot -4
     'PA_band_edge'          : 50,
-    'PA_scale'              : 2,
+    'PA_scale'              : 1,
     'PP_vel_scale'          : 0.1,
     'PP_rew_max'            : 4,
     'PP_rew_min'            : -1,

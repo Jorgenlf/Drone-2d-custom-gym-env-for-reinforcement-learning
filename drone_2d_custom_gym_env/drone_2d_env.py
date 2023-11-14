@@ -120,7 +120,7 @@ class Drone2dEnv(gym.Env):
             self.draw_orange_obst_vec = False
             self.obs_angle = 0
             self.vel_angle = 0
-            self.closest_point = np.array([0,0])
+            self.closest_point = np.array([self.wps[0][0],self.wps[0][1]]) #Ish correct
             self.drone_alpha = 0
             self.drone_vel = np.array([0,0])
             self.closest_p_angle = 0
@@ -198,8 +198,6 @@ class Drone2dEnv(gym.Env):
             pymunk.pygame_util.positive_y_is_up = True
 
         #Generating drone's starting position
-        # random_x = random.uniform(100, 200)
-        # random_y = random.uniform(100, 200)
         x1 = self.wps[0][0]
         y1 = self.wps[0][1]
 
@@ -208,28 +206,42 @@ class Drone2dEnv(gym.Env):
 
         self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
 
+
+        #Curriculum-----------------
+        if self.sim_num < 700000:
+            self.obstacles = []
+        elif self.sim_num > 700000 and self.sim_num < 1000000:
+            self.obstacles = []
+            self.initial_throw = False
+            random_x = random.uniform(0, self.screen_width-100)
+            random_y = random.uniform(0, self.screen_height-100)
+            self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+        elif self.sim_num > 1000000 and self.sim_num < 2000000: 
+            self.initial_throw = False
+            tmin = 1000000
+            tmax = 2000000
+            cmin = 0.2
+            cmax = 1
+            spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
+            spawn = np.random.binomial(1,spawn_chance)
+            if spawn == 1 and spawn_chance < 0.4: #First spawn obstacles around path
+                self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 100,onPath=False)
+            elif spawn == 1 and spawn_chance > 0.6: #Then spawn obstacles on path
+                self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+        else: #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
+            self.initial_throw = False
+            n_obs = np.random.normal(1, 4)
+            if n_obs < 0: n_obs = 1
+            self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
+            obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+            self.obstacles.append(obs_on_path[0])
+        #---------------------------
+
         damping_factor = 0.9
         #Amount of simple damping to apply to the space.
         # A value of 0.9 means that each body will lose 10% of its velocity per second. Defaults to 1. Like gravity, it can be overridden on a per body basis.
         for body in self.space.bodies:
             body.damping = damping_factor
-
-        #Curriculum 
-        if self.sim_num < 800000:
-            self.obstacles = []
-        elif self.sim_num > 800000 and self.sim_num < 2000000:            
-            tmin = 800000
-            tmax = 2000000
-            cmin = 0.2
-            cmax = 1
-            spawn = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
-            spawn = np.random.binomial(1,spawn)
-            if spawn == 1: 
-                self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
-        else:
-            n_obs = np.random.normal(1, 4)
-            if n_obs < 0: n_obs = 2
-            self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
 
         if self.k_obs > len(self.obstacles):
             self.k_obs = len(self.obstacles)
@@ -281,7 +293,7 @@ class Drone2dEnv(gym.Env):
         target_dist_y = self.invm1to1(obs[5],0,self.screen_height)
         drone_pos_x = self.invm1to1(obs[6],0,self.screen_width)
         drone_pos_y = self.invm1to1(obs[7],0,self.screen_height)
-        # 8, 9, 10, 11 and 12 part of collision avoidance so only used if there are obstacles
+        # 8, 9, 10, 11, 12, 13, 14, 15 and 16 part of collision avoidance so only used if there are obstacles
         s_drone_vel_angle = obs[17]*np.pi
         c_drone_vel_angle = obs[18]*np.pi
         drone_vel_angle = (np.arctan2(s_drone_vel_angle, c_drone_vel_angle) + 2*np.pi)%(2*np.pi) #range 0 to 2pi
@@ -347,7 +359,7 @@ class Drone2dEnv(gym.Env):
             #TODO make hyperparameter to toggle this
             if (drone_closest_obs_dist < danger_range):
                 lambda_PA = (drone_closest_obs_dist/danger_range)/2
-                if lambda_PA < 0: lambda_PA = 0
+                if lambda_PA < 0.10 : lambda_PA = 0.10
                 lambda_CA = 1-lambda_PA
 
             reward_collision_avoidance = 0
