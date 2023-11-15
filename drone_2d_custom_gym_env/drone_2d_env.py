@@ -487,6 +487,9 @@ class Drone2dEnv(gym.Env):
         #May keep it to reward reaching the end or reward path progression
         target_distance_x = self.m1to1(self.x_target-x, 0, self.screen_width)
         target_distance_y = self.m1to1(self.y_target-y, 0, self.screen_height)
+        #Should maybe just give position of target rather than distance to target
+        target_pos_x = self.m1to1(self.x_target, 0, self.screen_width)
+        target_pos_y = self.m1to1(self.y_target, 0, self.screen_height)
 
         #Position of drone
         pos_x = self.m1to1(x, 0, self.screen_width)
