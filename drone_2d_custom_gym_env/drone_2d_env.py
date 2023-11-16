@@ -138,6 +138,7 @@ class Drone2dEnv(gym.Env):
         self.info['collision_reward'] = 0
         self.info['reach_end_reward'] = 0
         self.info['agressive_alpha_reward'] = 0
+        self.info['dist_closest_obs'] = 0
 
         self.current_time_step = 0
         self.left_force = -1
@@ -439,13 +440,14 @@ class Drone2dEnv(gym.Env):
         # print(reward)
 
         self.info['reward'] = reward
-        self.info['collision_avoidance_reward'] = reward_collision_avoidance
-        self.info['path_adherence'] = reward_path_adherence
+        self.info['collision_avoidance_reward'] = reward_collision_avoidance*lambda_CA
+        self.info['path_adherence'] = reward_path_adherence*lambda_PA
         self.info["path_progression"] = reward_path_progression
         self.info['collision_reward'] = reward_collision
         self.info['reach_end_reward'] = reach_end_reward
         self.info['agressive_alpha_reward'] = agressive_alpha_reward
         self.info['env_steps'] = self.current_time_step
+        self.info['dist_closest_obs'] = drone_closest_obs_dist
 
         if end_cond_1 or end_cond_2 or end_cond_4 or end_cond_5:
             self.done = True
@@ -676,6 +678,11 @@ class Drone2dEnv(gym.Env):
         text = font.render('Agressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
         textRect.topleft = (0, font_size*4)
+        self.screen.blit(text, textRect)
+        #Draw the closest obstacle distance below the agressive alpha reward
+        text = font.render('Closest obs dist: ' + str(round(self.info['dist_closest_obs'], 2)), True, (150, 0, 0), (243, 243, 243))
+        textRect = text.get_rect()
+        textRect.topleft = (0, font_size*5+10) #offset to separate from the rewards
         self.screen.blit(text, textRect)
 
         #Drawing predefined path

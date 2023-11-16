@@ -3,7 +3,7 @@ import numpy as np
 # This file contains the configuration for the RL agent and the environment
 
 rl_config = {
-    'total_timesteps'       : 5000000,
+    'total_timesteps'       : 8000000,
     'ent_coef'              : 0.01,
 }
 
@@ -18,17 +18,17 @@ env_train_config = {
     'initial_throw'         : True,
     'random_path_spawn'     : True,
     'path_segment_length'   : 100,
-    'n_wps'                 : 9, # Rule of thumb (screen size / 100)-1 
-    'screensize_x'          : 1000,
-    'screensize_y'          : 1000,
+    'n_wps'                 : 12, # Rule of thumb (screen size / 100)-1 
+    'screensize_x'          : 1300,
+    'screensize_y'          : 1300,
     'lookahead'             : 220,
     'spawn_corners'         : (1,4), #(DL,DR,UL,UR) 1,4 gives all corners 1,1 gives only bottom left corner 4,4 gives only top right corner 
-    'danger_range'          : 200,
-    'danger_angle'          : 30,
+    'danger_range'          : 150,
+    'danger_angle'          : 20,
     'abs_inv_CA_min_rew'    : 1/4, #1/2 -> -2 is min reward per CA fcn range and angle --> rangefcn + anglefcn = -4
-    'PA_band_edge'          : 50,
-    'PA_scale'              : 1,
-    'PP_vel_scale'          : 0.1,
+    'PA_band_edge'          : 40,
+    'PA_scale'              : 2,
+    'PP_vel_scale'          : 0.09,
     'PP_rew_max'            : 4,
     'PP_rew_min'            : -1,
     'rew_collision'         : -50,
@@ -37,12 +37,12 @@ env_train_config = {
     'AA_angle'              : np.pi/2,
     'AA_band'               : np.pi/4, 
     'rew_AA'                : -1,
-    'use_Lambda'            : False,
+    'use_Lambda'            : True,
 }
 
 env_test_config = env_train_config.copy()
-env_test_config['render_sim'] = True
-env_test_config['render_path'] = True
-env_test_config['render_shade'] = True
-env_test_config['initial_throw'] = False
-env_test_config['n_fall_steps'] = 0
+env_test_config['render_sim']       = True
+env_test_config['render_path']      = True
+env_test_config['render_shade']     = True
+env_test_config['initial_throw']    = False
+env_test_config['n_fall_steps']     = 0
