@@ -59,6 +59,7 @@ class Drone2dEnv(gym.Env):
         self.AA_angle = kwargs['AA_angle']
         self.AA_band = kwargs['AA_band']
         self.rew_AA = kwargs['rew_AA']
+        self.use_Lambda = kwargs['use_Lambda']
         self.k_obs = 3 #Number of obstacles the drone has angle and distance to must write more code to make this dynamic
 
         self.kwargs = kwargs
@@ -202,40 +203,45 @@ class Drone2dEnv(gym.Env):
         y1 = self.wps[0][1]
 
         angle_rand = random.uniform(-np.pi/4, np.pi/4)
-        self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+        # self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
-        self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
 
 
         #Curriculum-----------------
         if self.sim_num < 700000:
+            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             self.obstacles = []
         elif self.sim_num > 700000 and self.sim_num < 1000000:
             self.obstacles = []
-            self.initial_throw = False
-            random_x = random.uniform(0, self.screen_width-100)
-            random_y = random.uniform(0, self.screen_height-100)
+            # self.initial_throw = False
+            random_x = random.uniform(100, self.screen_width-100)
+            random_y = random.uniform(100, self.screen_height-100)
             self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
         elif self.sim_num > 1000000 and self.sim_num < 2000000: 
-            self.initial_throw = False
+            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+            # self.initial_throw = False
             tmin = 1000000
             tmax = 2000000
             cmin = 0.2
             cmax = 1
             spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
             spawn = np.random.binomial(1,spawn_chance)
-            if spawn == 1 and spawn_chance < 0.4: #First spawn obstacles around path
+            # print('\nspawn chance', spawn_chance)
+            # print('spawn', spawn)
+            if spawn == 1 and spawn_chance < 0.6: #First spawn obstacles around path
                 self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 100,onPath=False)
             elif spawn == 1 and spawn_chance > 0.6: #Then spawn obstacles on path
                 self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
         else: #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
-            self.initial_throw = False
+            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+            # self.initial_throw = False
             n_obs = np.random.normal(1, 4)
             if n_obs < 0: n_obs = 1
             self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
             obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
             self.obstacles.append(obs_on_path[0])
         #---------------------------
+        self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
 
         damping_factor = 0.9
         #Amount of simple damping to apply to the space.
@@ -356,23 +362,24 @@ class Drone2dEnv(gym.Env):
             #i.e now the minimum reward is -3/2 = -1.5. Could make it more intuitive by doing inv in equation below, but saves the inversion operation as it is done here.
 
             #Update so the lambda_path_adherance variable is dynamically lowered the closer the drone is to an obstacle 
-            #TODO make hyperparameter to toggle this
-            if (drone_closest_obs_dist < danger_range):
+
+            if (drone_closest_obs_dist < danger_range) and self.use_Lambda is True:
                 lambda_PA = (drone_closest_obs_dist/danger_range)/2
                 if lambda_PA < 0.10 : lambda_PA = 0.10
                 lambda_CA = 1-lambda_PA
 
             reward_collision_avoidance = 0
             if (drone_closest_obs_dist < danger_range) and (angle_diff < danger_angle):
-                range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
-                angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
-                reward_collision_avoidance = (range_rew + angle_rew)*2
+                # range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
+                # angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
+                # reward_collision_avoidance = (range_rew + angle_rew)*2 #TODO make if elif else if this is to be used.
                 self.draw_red_velocity = True
                 self.draw_orange_obst_vec = True
-            elif drone_closest_obs_dist <danger_range:
+            if drone_closest_obs_dist <danger_range:
                 range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
                 angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
                 if angle_rew > 0: angle_rew = 0 #In this case the angle reward may become positive as anglediff may !< danger_angle
+                if range_rew > 0: range_rew = 0
                 reward_collision_avoidance = range_rew + angle_rew
                 self.draw_red_velocity = False
                 self.draw_orange_obst_vec = True
@@ -687,8 +694,8 @@ class Drone2dEnv(gym.Env):
 
         #Drawing closest point on path, vector between drone and closest point on path and angle
         pygame.draw.circle(self.screen, (0, 0, 255), (self.closest_point[0], self.screen_height-self.closest_point[1]), 5)
-        pygame.draw.line(self.screen, (0, 0, 255), (drone_x, self.screen_height-drone_y), (self.closest_point[0], self.screen_height-self.closest_point[1]), 4)
-        pygame.draw.arc(self.screen, (0, 0, 255), (drone_x-50*2/3, self.screen_height-drone_y-50*2/3, 100*2/3, 100*2/3), alpha, self.closest_p_angle, 3)
+        # pygame.draw.line(self.screen, (0, 0, 255), (drone_x, self.screen_height-drone_y), (self.closest_point[0], self.screen_height-self.closest_point[1]), 4)
+        # pygame.draw.arc(self.screen, (0, 0, 255), (drone_x-50*2/3, self.screen_height-drone_y-50*2/3, 100*2/3, 100*2/3), alpha, self.closest_p_angle, 3)
 
 
         #Drawing vector between drone and lookahead point and angle

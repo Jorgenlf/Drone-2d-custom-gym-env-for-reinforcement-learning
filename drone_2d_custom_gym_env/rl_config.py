@@ -3,7 +3,8 @@ import numpy as np
 # This file contains the configuration for the RL agent and the environment
 
 rl_config = {
-    'total_timesteps'       : 4000000,
+    'total_timesteps'       : 5000000,
+    'ent_coef'              : 0.01,
 }
 
 env_train_config = {
@@ -11,20 +12,20 @@ env_train_config = {
     'render_path'           : False,
     'render_shade'          : False,
     'shade_distance'        : 75,
-    'n_steps'               : 1200,
+    'n_steps'               : 1100,
     'n_fall_steps'          : 5,
     'change_target'         : False,
     'initial_throw'         : True,
     'random_path_spawn'     : True,
     'path_segment_length'   : 100,
-    'n_wps'                 : 11, # Rule of thumb (screen size / 100)-1 
-    'screensize_x'          : 1200,
-    'screensize_y'          : 1200,
+    'n_wps'                 : 9, # Rule of thumb (screen size / 100)-1 
+    'screensize_x'          : 1000,
+    'screensize_y'          : 1000,
     'lookahead'             : 220,
     'spawn_corners'         : (1,4), #(DL,DR,UL,UR) 1,4 gives all corners 1,1 gives only bottom left corner 4,4 gives only top right corner 
-    'danger_range'          : 350,
+    'danger_range'          : 200,
     'danger_angle'          : 30,
-    'abs_inv_CA_min_rew'    : 1/5, #1/2 -> -2 is min reward per CA fcn--> tot -4
+    'abs_inv_CA_min_rew'    : 1/4, #1/2 -> -2 is min reward per CA fcn range and angle --> rangefcn + anglefcn = -4
     'PA_band_edge'          : 50,
     'PA_scale'              : 1,
     'PP_vel_scale'          : 0.1,
@@ -36,6 +37,7 @@ env_train_config = {
     'AA_angle'              : np.pi/2,
     'AA_band'               : np.pi/4, 
     'rew_AA'                : -1,
+    'use_Lambda'            : False,
 }
 
 env_test_config = env_train_config.copy()

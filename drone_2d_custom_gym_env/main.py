@@ -78,11 +78,11 @@ total_timesteps = rl_config['total_timesteps']
 
 # mode = 'debug'
 
-# mode = "train"
+mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_7_30.zip' 
+# mode = "eval"
+agent_path = 'ppo_agents/PFCA_see_3_obs_8_40.zip' 
 
 #PFCA_20 is PFCA 4 on homecomputer 
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!
@@ -159,7 +159,7 @@ elif mode == "train":
             # List of callbacks to be called
             callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-            model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
+            model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs",ent_coef=0.01)
 
             with open('logs/env_train_config.txt', 'w') as file:
                 file.write(str(env_train_config))
