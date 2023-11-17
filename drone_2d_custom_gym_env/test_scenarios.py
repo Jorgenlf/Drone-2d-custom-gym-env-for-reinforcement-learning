@@ -181,7 +181,7 @@ def create_test_scenario(space,scen:str,
         path = QPMI2D(wps)
         obstacles = generate_scen_obstacles(n_obs,'parallel',space,path,obs_size)
     elif scen == 'corridor':
-        offset = 200
+        offset = 100
         wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y)
         pluss_offset_wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y,offset)
         minus_offset_wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y,-offset)
@@ -202,7 +202,7 @@ def create_test_scenario(space,scen:str,
         path = QPMI2D(wps)
         obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size)
     elif scen == 'S_corridor': 
-        offset = 100
+        offset = 150
         segment_length = 200
         n_wps = 7
         n_obs = 30

@@ -1,6 +1,7 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
+from PIL import Image
 import gym
 import time
 from multiprocessing import freeze_support, get_context
@@ -41,7 +42,18 @@ def _manual_control(env):
                     if event.key == pygame.K_ESCAPE:
                         env.close()
                         return
-
+                    if event.key == pygame.K_s:
+                        print("Saving screenshot")
+                        pygame.image.save(env.screen, "screenshots/screenshot.png")
+                        image = Image.open("screenshots/screenshot.png")
+                        base_name = "screenshots/pdfs/img_"
+                        index = 1
+                        pdf_name = f"{base_name}{index}.pdf"
+                        while os.path.exists(pdf_name):
+                            index += 1
+                            pdf_name = f"{base_name}{str(index)}.pdf"
+                        image.save(pdf_name, format="PDF")
+                    
                 obs, rew, done, info = env.step(action=input)
                 if done:
                     done = False
@@ -76,12 +88,12 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-# mode = 'debug'
+mode = 'debug'
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-mode = "eval"
+# mode = "eval"
 agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
 
 #PFCA_20 is PFCA 4 on homecomputer
