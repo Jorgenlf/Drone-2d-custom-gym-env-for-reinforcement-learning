@@ -3,6 +3,7 @@ from obstacles import *
 from event_handler import *
 from predef_path import *
 from transformations import *
+from test_scenarios import *
 
 import gym
 from gym import spaces
@@ -38,9 +39,9 @@ class Drone2dEnv(gym.Env):
         n_fall_steps = kwargs['n_fall_steps']
         change_target = kwargs['change_target']
         initial_throw = kwargs['initial_throw']
-        random_path_spawn = kwargs['random_path_spawn']
-        path_segment_length = kwargs['path_segment_length']
-        n_wps = kwargs['n_wps']
+        self.random_path_spawn = kwargs['random_path_spawn']
+        self.path_segment_length = kwargs['path_segment_length']
+        self.n_wps = kwargs['n_wps']
         screensize_x = kwargs['screensize_x']
         screensize_y = kwargs['screensize_y']
         self.lookahead = kwargs['lookahead']
@@ -60,7 +61,9 @@ class Drone2dEnv(gym.Env):
         self.AA_band = kwargs['AA_band']
         self.rew_AA = kwargs['rew_AA']
         self.use_Lambda = kwargs['use_Lambda']
-        self.k_obs = 3 #Number of obstacles the drone has angle and distance to must write more code to make this dynamic
+        self.mode = kwargs['mode'] # 'curriculum' or 'test'
+        self.scenario = kwargs['scenario'] # 'paralell', 'S_parallel', 'perpendicular', 'corridor', 'S_corridor', 'large
+        self.k_obs = 3 #Number of obstacles the drone has angle and distance to must write more code to make this dynamic if even possible
 
         self.kwargs = kwargs
 
@@ -82,32 +85,6 @@ class Drone2dEnv(gym.Env):
         self.render_sim = render_sim
         self.render_path = render_path
         self.render_shade = render_shade
-        
-        #Predefined path generation
-        self.random_path_spawn = random_path_spawn
-        self.wps = []
-        self.seg_length = path_segment_length
-        if random_path_spawn is True:
-            spawn = random.randint(self.spawn_corners[0],self.spawn_corners[1]) 
-            scen = ''
-            if spawn == 1: #TODO make enum rather, but this works temporarily
-                scen = 'DL'
-            elif spawn == 2:
-                scen = 'DR'
-            elif spawn == 3:
-                scen = 'UL'
-            elif spawn == 4:
-                scen = 'UR'
-
-            self.wps = generate_random_waypoints_2d(n_wps,self.seg_length,scen,screen_x=screensize_x,screen_y=screensize_y)
-        else:
-            self.wps = generate_random_waypoints_2d(n_wps,self.seg_length,'DR',screen_x=screensize_x,screen_y=screensize_y)
-        self.predef_path = QPMI2D(self.wps)
-        self.waypoint_index = 0
-
-        #Make last waypoint the target
-        self.x_target = self.wps[-1][0]
-        self.y_target = self.wps[-1][1]
 
         #Rendering initialization
         self.screen_width = screensize_x
@@ -121,7 +98,7 @@ class Drone2dEnv(gym.Env):
             self.draw_orange_obst_vec = False
             self.obs_angle = 0
             self.vel_angle = 0
-            self.closest_point = np.array([self.wps[0][0],self.wps[0][1]]) #Ish correct
+            self.closest_point = np.array([0,0]) 
             self.drone_alpha = 0
             self.drone_vel = np.array([0,0])
             self.closest_p_angle = 0
@@ -145,7 +122,6 @@ class Drone2dEnv(gym.Env):
         self.right_force = -1
         
         #Pymunk initialization
-        self.obstacles = []
         self.init_pymunk()
 
         #Parameters
@@ -185,6 +161,7 @@ class Drone2dEnv(gym.Env):
         self.shade_image = pygame.image.load(img_path)
 
     def init_pymunk(self):
+        self.obstacles = []
         self.space = pymunk.Space()
         self.space.gravity = Vec2d(0, -1000)
 
@@ -199,49 +176,88 @@ class Drone2dEnv(gym.Env):
             self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
             pymunk.pygame_util.positive_y_is_up = True
 
-        #Generating drone's starting position
+        #Predefined path generation
+        if self.mode == 'curriculum':
+            self.wps = []
+            if self.random_path_spawn is True:
+                spawn = random.randint(self.spawn_corners[0],self.spawn_corners[1]) 
+                scen = ''
+                if spawn == 1: #TODO make enum rather, but this works temporarily
+                    scen = 'DL'
+                elif spawn == 2:
+                    scen = 'DR'
+                elif spawn == 3:
+                    scen = 'UL'
+                elif spawn == 4:
+                    scen = 'UR'
+                self.wps = generate_random_waypoints_2d(self.n_wps,self.path_segment_length,scen,screen_x=self.screen_width,screen_y=self.screen_height)
+            else:
+                self.wps = generate_random_waypoints_2d(self.n_wps,self.path_segment_length,'DR',screen_x=self.screen_width,screen_y=self.screen_height)
+            self.predef_path = QPMI2D(self.wps)
+        
+        if self.mode == 'test':
+            if self.scenario == 'perpendicular':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'perpendicular',self.screen_width,self.screen_height)
+            if self.scenario == 'parallel':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'parallel',self.screen_width,self.screen_height)
+            if self.scenario == 'S_parallel':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_parallel',self.screen_width,self.screen_height)
+            if self.scenario == 'corridor':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'corridor',self.screen_width,self.screen_height)
+            if self.scenario == 'S_corridor':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_corridor',self.screen_width,self.screen_height)
+            if self.scenario == 'large':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'large',self.screen_width,self.screen_height)
+            if self.scenario == 'impossible':
+                self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'impossible',self.screen_width,self.screen_height)
+            
+            
+        self.waypoint_index = 0
+        #Make last waypoint the target
+        self.x_target = self.wps[-1][0]
+        self.y_target = self.wps[-1][1]
+
+        #Generating drone's starting position #TODO make random starting position under testing 
         x1 = self.wps[0][0]
         y1 = self.wps[0][1]
-
         angle_rand = random.uniform(-np.pi/4, np.pi/4)
-        # self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+        self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
-
-
-        #Curriculum-----------------
-        if self.sim_num < 700000:
-            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-            self.obstacles = []
-        elif self.sim_num > 700000 and self.sim_num < 1000000:
-            self.obstacles = []
-            # self.initial_throw = False
-            random_x = random.uniform(100, self.screen_width-100)
-            random_y = random.uniform(100, self.screen_height-100)
-            self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-        elif self.sim_num > 1000000 and self.sim_num < 2000000: 
-            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-            # self.initial_throw = False
-            tmin = 1000000
-            tmax = 2000000
-            cmin = 0.2
-            cmax = 1
-            spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
-            spawn = np.random.binomial(1,spawn_chance)
-            # print('\nspawn chance', spawn_chance)
-            # print('spawn', spawn)
-            if spawn == 1 and spawn_chance < 0.6: #First spawn obstacles around path
-                self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 100,onPath=False)
-            elif spawn == 1 and spawn_chance > 0.6: #Then spawn obstacles on path
-                self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
-        else: #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
-            self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-            # self.initial_throw = False
-            n_obs = np.random.normal(1, 4)
-            if n_obs < 0: n_obs = 1
-            self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
-            obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
-            self.obstacles.append(obs_on_path[0])
-        #---------------------------
+        if self.mode == 'curriculum':
+            #Curriculum-----------------
+            if self.sim_num < 700000:
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+                self.obstacles = []
+            elif self.sim_num > 700000 and self.sim_num < 1000000:
+                self.obstacles = []
+                # self.initial_throw = False
+                random_x = random.uniform(100, self.screen_width-100)
+                random_y = random.uniform(100, self.screen_height-100)
+                self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+            elif self.sim_num > 1000000 and self.sim_num < 2000000: 
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+                # self.initial_throw = False
+                tmin = 1000000
+                tmax = 2000000
+                cmin = 0.2
+                cmax = 1
+                spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
+                spawn = np.random.binomial(1,spawn_chance)
+                # print('\nspawn chance', spawn_chance)
+                # print('spawn', spawn)
+                if spawn == 1 and spawn_chance < 0.6: #First spawn obstacles around path
+                    self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 100,onPath=False)
+                elif spawn == 1 and spawn_chance > 0.6: #Then spawn obstacles on path
+                    self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+            else: #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+                # self.initial_throw = False
+                n_obs = np.random.normal(1, 4)
+                if n_obs < 0: n_obs = 1
+                self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
+                obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+                self.obstacles.append(obs_on_path[0])
+            #---------------------------
         self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
 
         damping_factor = 0.9
