@@ -82,7 +82,7 @@ total_timesteps = rl_config['total_timesteps']
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_14_80.zip'
+agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
 
 #PFCA_20 is PFCA 4 on homecomputer
 #PFCA_21 is PFCA 5 on homecomputer using all 4 init positions of path better result!

@@ -447,7 +447,10 @@ class Drone2dEnv(gym.Env):
         self.info['reach_end_reward'] = reach_end_reward
         self.info['agressive_alpha_reward'] = agressive_alpha_reward
         self.info['env_steps'] = self.current_time_step
-        self.info['dist_closest_obs'] = drone_closest_obs_dist
+        if self.obstacles != []:
+            self.info['dist_closest_obs'] = drone_closest_obs_dist
+        else:
+            self.info['dist_closest_obs'] = np.inf
 
         if end_cond_1 or end_cond_2 or end_cond_4 or end_cond_5:
             self.done = True

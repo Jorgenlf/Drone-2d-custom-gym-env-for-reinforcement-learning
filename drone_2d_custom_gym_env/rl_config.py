@@ -3,7 +3,7 @@ import numpy as np
 # This file contains the configuration for the RL agent and the environment
 
 rl_config = {
-    'total_timesteps'       : 8000000,
+    'total_timesteps'       : 9000000,
     'ent_coef'              : 0.01,
 }
 
@@ -25,11 +25,11 @@ env_train_config = {
     'spawn_corners'         : (1,4), #(DL,DR,UL,UR) 1,4 gives all corners 1,1 gives only bottom left corner 4,4 gives only top right corner 
     'danger_range'          : 150,
     'danger_angle'          : 20,
-    'abs_inv_CA_min_rew'    : 1/4, #1/2 -> -2 is min reward per CA fcn range and angle --> rangefcn + anglefcn = -4
+    'abs_inv_CA_min_rew'    : 1/6, #1/2 -> -2 is min reward per CA fcn range and angle --> rangefcn + anglefcn = -4
     'PA_band_edge'          : 40,
     'PA_scale'              : 2,
-    'PP_vel_scale'          : 0.09,
-    'PP_rew_max'            : 4,
+    'PP_vel_scale'          : 0.08,
+    'PP_rew_max'            : 3.5,
     'PP_rew_min'            : -1,
     'rew_collision'         : -50,
     'reach_end_radius'      : 20,
