@@ -19,7 +19,7 @@ def generate_scen_obstacles(n, scen, space, path:QPMI2D,obs_size,screen_x = None
     elif scen == 'parallel':
         path_lenght = path.length
         space_occupied = n*obs_size*2
-        offset = (path_lenght - space_occupied)/2
+        offset = (path_lenght - space_occupied)/2 - obs_size
         for i in range(1,n+1):
             u_obs = offset + i*obs_size*2
             x,y = path.__call__(u_obs)
@@ -39,18 +39,22 @@ def generate_scen_obstacles(n, scen, space, path:QPMI2D,obs_size,screen_x = None
         #Assume the path given is to be populated with n obstacles along the whole path
         #Must then scale the obstacle size to fit the path
         n=10
+        free_end_space = 100
         path_lenght = path.length
-        obs_size = path_lenght/(n*2)
-        for i in range(1,n+1):
-            u_obs = i*obs_size*2
+        space_to_fill = path_lenght - free_end_space*2
+        obs_size = space_to_fill/(n*2)
+        for i in range(1,n):
+            u_obs = i*obs_size*2 + free_end_space
             x,y = path.__call__(u_obs)
             obs = Circle(x,y,obs_size,color,space)    
             obstacles.append(obs)
     elif scen == 'S_corridor':
+        free_end_space = 100
         path_lenght = path.length
-        obs_size = path_lenght/(n*2)
-        for i in range(1,n+1):
-            u_obs = i*obs_size*2
+        space_to_fill = path_lenght - free_end_space*2
+        obs_size = space_to_fill/(n*2)
+        for i in range(1,n):
+            u_obs = i*obs_size*2 + free_end_space
             x,y = path.__call__(u_obs)
             obs = Circle(x,y,obs_size,color,space)    
             obstacles.append(obs)
@@ -83,7 +87,7 @@ def generate_scen_obstacles(n, scen, space, path:QPMI2D,obs_size,screen_x = None
 def generate_scen_waypoints_2d(nwaypoints, distance, scen, screen_x = None,screen_y = None, offset = 0):
     waypoints = []
     if scen == 'perpendicular' or scen == 'parallel' or scen == 'impossible':
-        x1 = screen_x/10
+        x1 = screen_x/2 - distance*(nwaypoints-1)/2
         y1 = screen_y/2
         waypoints = [np.array([x1, y1])]
         for i in range(nwaypoints - 1):
@@ -107,7 +111,7 @@ def generate_scen_waypoints_2d(nwaypoints, distance, scen, screen_x = None,scree
             wp = np.array([x, y])
             waypoints.append(wp)
     elif scen == 'corridor':
-        x1 = screen_x/20
+        x1 = screen_x/2 - distance*(nwaypoints-1)/2
         y1 = screen_y/2 + offset
         waypoints = [np.array([x1, y1])]
         for i in range(nwaypoints - 1):
@@ -117,7 +121,7 @@ def generate_scen_waypoints_2d(nwaypoints, distance, scen, screen_x = None,scree
             wp = np.array([x, y])
             waypoints.append(wp)
     elif scen == 'S_corridor':
-        x1 = screen_x/10
+        x1 = screen_x/7
         y1 = screen_y/2 + offset
         waypoints = [np.array([x1, y1])]
         phase = np.pi/4
@@ -131,23 +135,33 @@ def generate_scen_waypoints_2d(nwaypoints, distance, scen, screen_x = None,scree
             wp = np.array([x, y])
             waypoints.append(wp)
     elif scen == 'large':
-        x1 = screen_x/10
-        y1 = screen_y/2
-        waypoints = [np.array([x1, y1])]
+        nwaypoints = int(screen_x/100)
+
         obs_rad = screen_x/5
-        margin = 50
-        distance = screen_x/10
+        margin = 80
         circle_to_follow_radius = obs_rad + margin
-        waypoints.append(np.array([x1+distance,y1]))
+        circumference = 2*np.pi*circle_to_follow_radius
+        half_circumference = circumference/2
+        circ_seg_lengths = half_circumference/(nwaypoints-3)
+
+        distance = screen_x/10
+        x1 = screen_x/2 - obs_rad - margin - distance
+        y1 = screen_y/2 - margin
+        waypoints = [np.array([x1, y1])]
+        wp2 = np.array([x1+distance, y1])
+        waypoints.append(wp2)
+
+
         for i in range(1,nwaypoints-1):
             azimuth = np.pi/2 - (i-1)*np.pi/(nwaypoints-3)
-            x = waypoints[i][0] + circle_to_follow_radius * np.cos(azimuth)
-            y = waypoints[i][1] + circle_to_follow_radius * np.sin(azimuth)
+            x = waypoints[i][0] + circ_seg_lengths * np.cos(azimuth)
+            y = waypoints[i][1] + circ_seg_lengths * np.sin(azimuth)
             wp = np.array([x, y])
             waypoints.append(wp)
         prev_x = waypoints[-1][0]
         prev_y = waypoints[-1][1]
         waypoints.append(np.array([prev_x+distance,prev_y]))
+
 
 
     return np.array(waypoints)
@@ -173,26 +187,13 @@ def create_test_scenario(space,scen:str,
     if scen == 'perpendicular':
         n_obs = 6
         obs_size = 20
-        wps = generate_scen_waypoints_2d(n_wps,100,'perpendicular',screen_x,screen_y)
+        wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y)
         path = QPMI2D(wps)
-        obstacles = generate_scen_obstacles(n_obs,'perpendicular',space,path,obs_size)
+        obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size)
     elif scen == 'parallel':
-        wps = generate_scen_waypoints_2d(n_wps,100,'parallel',screen_x,screen_y)
+        wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y)
         path = QPMI2D(wps)
-        obstacles = generate_scen_obstacles(n_obs,'parallel',space,path,obs_size)
-    elif scen == 'corridor':
-        offset = 100
-        wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y)
-        pluss_offset_wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y,offset)
-        minus_offset_wps = generate_scen_waypoints_2d(n_wps,100,'corridor',screen_x,screen_y,-offset)
-
-        path = QPMI2D(wps)
-        po_path = QPMI2D(pluss_offset_wps)
-        mo_path = QPMI2D(minus_offset_wps)
-
-        obstacles = generate_scen_obstacles(n_obs,scen,space,po_path,obs_size)
-        obstacles2 = generate_scen_obstacles(n_obs,scen,space,mo_path,obs_size)
-        obstacles.extend(obstacles2)
+        obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size)
     elif scen == 'S_parallel':
         segment_length = 300
         n_wps = 6
@@ -201,6 +202,19 @@ def create_test_scenario(space,scen:str,
         wps = generate_scen_waypoints_2d(n_wps,segment_length,scen,screen_x,screen_y)
         path = QPMI2D(wps)
         obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size)
+    elif scen == 'corridor':
+        offset = 100
+        wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y)
+        pluss_offset_wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y,offset)
+        minus_offset_wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y,-offset)
+
+        path = QPMI2D(wps)
+        po_path = QPMI2D(pluss_offset_wps)
+        mo_path = QPMI2D(minus_offset_wps)
+
+        obstacles = generate_scen_obstacles(n_obs,scen,space,po_path,obs_size)
+        obstacles2 = generate_scen_obstacles(n_obs,scen,space,mo_path,obs_size)
+        obstacles.extend(obstacles2)
     elif scen == 'S_corridor': 
         offset = 150
         segment_length = 200
@@ -219,15 +233,15 @@ def create_test_scenario(space,scen:str,
         obstacles.extend(obstacles2)
     elif scen == 'impossible':
         n_obs = 20
-        wps = generate_scen_waypoints_2d(n_wps,100,'impossible',screen_x,screen_y)
+        wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y)
         path = QPMI2D(wps)
-        obstacles = generate_scen_obstacles(n_obs,'impossible',space,path,obs_size)
+        obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size)
     elif scen == 'large':
         n_obs = 1
         obs_size = screen_x/5
-        wps = generate_scen_waypoints_2d(n_wps,100,'large',screen_x,screen_y)
+        wps = generate_scen_waypoints_2d(n_wps,100,scen,screen_x,screen_y)
         path = QPMI2D(wps)
-        obstacles = generate_scen_obstacles(n_obs,'large',space,path,obs_size,screen_x,screen_y)
+        obstacles = generate_scen_obstacles(n_obs,scen,space,path,obs_size,screen_x,screen_y)
     
     return wps,path,obstacles
 
@@ -235,15 +249,20 @@ if __name__ == "__main__":
     screen_x = 1000
     screen_y = 1000 
     
-
-    #Corridor
-    wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y)
+    #Large
+    wps = generate_scen_waypoints_2d(10,100,'large',screen_x,screen_y)
     test_path = QPMI2D(wps)
-    po_wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y,100)
-    po_path = QPMI2D(po_wps)
-    mo_wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y,-100)
-    mo_path = QPMI2D(mo_wps)
-    po_path.mpl_plot_path()
-    mo_path.mpl_plot_path()
     test_path.mpl_plot_path()
     plt.show()
+
+    # #Corridor
+    # wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y)
+    # test_path = QPMI2D(wps)
+    # po_wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y,100)
+    # po_path = QPMI2D(po_wps)
+    # mo_wps = generate_scen_waypoints_2d(10,100,'corridor',screen_x,screen_y,-100)
+    # mo_path = QPMI2D(mo_wps)
+    # po_path.mpl_plot_path()
+    # mo_path.mpl_plot_path()
+    # test_path.mpl_plot_path()
+    # plt.show()

@@ -116,6 +116,19 @@ class Drone2dEnv(gym.Env):
         self.info['reach_end_reward'] = 0
         self.info['agressive_alpha_reward'] = 0
         self.info['dist_closest_obs'] = 0
+        #Metrics for testing 
+        # average path error APE, 
+        # n collisions, 
+        # n successful runs i.e reached end, 
+        # n failed runs i.e collision or time is up or alpha angle too aggressive
+        # chosen path vector
+        self.info['APE'] = 0
+        self.path_error = 0
+        self.info['n_collisions'] = 0
+        self.info['n_successful_runs'] = 0
+        self.info['n_failed_runs'] = 0
+        self.info['flight_path'] = 0
+        
 
         self.current_time_step = 0
         self.left_force = -1
@@ -468,12 +481,25 @@ class Drone2dEnv(gym.Env):
         else:
             self.info['dist_closest_obs'] = np.inf
 
+        self.path_error += dist_from_path
+        ape = self.path_error/self.current_time_step
         if end_cond_1 or end_cond_2 or end_cond_4 or end_cond_5:
             self.done = True
-            if end_cond_1: print("Collision")
-            if end_cond_2: print("Reached final waypoint")
-            if end_cond_4: print("Time is up")
-            if end_cond_5: print("Alpha angle too aggressive")
+            if end_cond_1: 
+                print("Collision")
+                self.info['n_collisions'] += 1
+                self.info['n_failed_runs'] += 1
+            if end_cond_2: 
+                print("Reached final waypoint")
+                self.info['n_successful_runs'] += 1
+            if end_cond_4: 
+                print("Time is up")
+                self.info['n_failed_runs'] += 1
+            if end_cond_5: 
+                print("Alpha angle too aggressive")
+                self.info['n_failed_runs'] += 1
+            self.info['APE'] = ape
+            self.info['flight_path'] = self.flight_path
 
         return obs, reward, self.done, self.info
 
