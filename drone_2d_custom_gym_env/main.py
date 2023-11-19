@@ -95,78 +95,50 @@ mode = 'debug'
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
+# agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
 
-mode = "test"
-run_n_times = 100
-runs = 0
-agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
-flight_paths = []
-apes = []
-collisions = 0
-successes = 0
-fails = 0
-time_spent = []
+scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
+
+for scenario in scenarios:
+    env_test_config['scenario'] = scenario
+    mode = "test"
+    run_n_times = 100
+    runs = 0
+    agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
+    flight_paths = []
+    apes = []
+    collisions = 0
+    successes = 0
+    fails = 0
+    time_spent = []
 
 
-continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
-#---------------------------------#
+    continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
+    #---------------------------------#
 
-if mode == "debug":
-    # Inspect an environment manually
-    register(
-        id='drone-2d-test',
-        entry_point='drone_2d_env:Drone2dEnv',
-        kwargs=env_test_config
-    )
+    if mode == "debug":
+        # Inspect an environment manually
+        register(
+            id='drone-2d-test',
+            entry_point='drone_2d_env:Drone2dEnv',
+            kwargs=env_test_config
+        )
 
-    env = gym.make('drone-2d-test')
-    _manual_control(env)
-    exit()
+        env = gym.make('drone-2d-test')
+        _manual_control(env)
+        exit()
 
-elif mode == "train":
-    register(
-        id='drone-2d-train',
-        entry_point='drone_2d_env:Drone2dEnv',
-        kwargs=env_train_config
-    )
-    env = None
-    if single_threaded is True:
-        num_cpu = 1
-        env = gym.make('drone-2d-train')
-        # Init callbacks #TODO make a smart folder structure
-        tensorboard_logger = TensorboardLogger()
-        checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
-                                                save_path="logs",
-                                                name_prefix="rl_model",
-                                                verbose=True)
-        # List of callbacks to be called
-        callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
-
-        model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
-
-        with open('logs/rl_config.txt', 'w') as file:
-            file.write(str(env_train_config))
-
-        with open('logs/rl_config.txt', 'w') as file:
-            file.write(str(rl_config))
-
-        model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_3_obs', callback=callbacks)
-        model.save('new_agent')
-        env.close()
-
-    else:
-        if __name__ == '__main__':
-            print('CPU COUNT:', multiprocessing.cpu_count())
-            max_cpu = multiprocessing.cpu_count()
-            num_cpu = max_cpu-2
-            print('Using',num_cpu,'CPUs')
-
-            freeze_support()
-            ctx = multiprocessing.get_context('spawn')
-            env_id = 'drone-2d-train'
-            env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
-
+    elif mode == "train":
+        register(
+            id='drone-2d-train',
+            entry_point='drone_2d_env:Drone2dEnv',
+            kwargs=env_train_config
+        )
+        env = None
+        if single_threaded is True:
+            num_cpu = 1
+            env = gym.make('drone-2d-train')
+            # Init callbacks #TODO make a smart folder structure
             tensorboard_logger = TensorboardLogger()
             checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
                                                     save_path="logs",
@@ -175,9 +147,9 @@ elif mode == "train":
             # List of callbacks to be called
             callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-            model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs",ent_coef=0.01)
+            model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs")
 
-            with open('logs/env_train_config.txt', 'w') as file:
+            with open('logs/rl_config.txt', 'w') as file:
                 file.write(str(env_train_config))
 
             with open('logs/rl_config.txt', 'w') as file:
@@ -187,141 +159,173 @@ elif mode == "train":
             model.save('new_agent')
             env.close()
 
-elif mode == "eval":
-    register(
-        id='drone-2d-test',
-        entry_point='drone_2d_env:Drone2dEnv',
-        kwargs=env_test_config
-    )
-    env = gym.make('drone-2d-test')
+        else:
+            if __name__ == '__main__':
+                print('CPU COUNT:', multiprocessing.cpu_count())
+                max_cpu = multiprocessing.cpu_count()
+                num_cpu = max_cpu-2
+                print('Using',num_cpu,'CPUs')
 
-    model = PPO.load(agent_path,env)
+                freeze_support()
+                ctx = multiprocessing.get_context('spawn')
+                env_id = 'drone-2d-train'
+                env = SubprocVecEnv([make_mp_env(env_id=env_id, rank=i) for i in range(num_cpu)])
 
-    random_seed = int(time.time())
-    model.set_random_seed(random_seed)
+                tensorboard_logger = TensorboardLogger()
+                checkpoint_saver = CheckpointCallback(save_freq=100000 // num_cpu,
+                                                        save_path="logs",
+                                                        name_prefix="rl_model",
+                                                        verbose=True)
+                # List of callbacks to be called
+                callbacks = CallbackList([tensorboard_logger, checkpoint_saver])
 
-    obs = env.reset()
+                model = PPO("MlpPolicy", env, verbose=True,tensorboard_log="logs",ent_coef=0.01)
 
-    try:
-        while True:
-            env.render()
+                with open('logs/env_train_config.txt', 'w') as file:
+                    file.write(str(env_train_config))
 
-            action, _states = model.predict(obs)
+                with open('logs/rl_config.txt', 'w') as file:
+                    file.write(str(rl_config))
 
-            obs, reward, done, info = env.step(action)
+                model.learn(total_timesteps=total_timesteps,tb_log_name='PPO_PFCA_see_3_obs', callback=callbacks)
+                model.save('new_agent')
+                env.close()
 
-            if done is True:
-                if continuous_mode is True:
-                    state = env.reset()
-                else:
-                    break
-    finally:
-        env.close()
-elif mode == "test":
-    #Want to run one of the test scenarios n times and save the results
-    register(
-        id='drone-2d-test',
-        entry_point='drone_2d_env:Drone2dEnv',
-        kwargs=env_test_config
-    )
-    env = gym.make('drone-2d-test')
+    elif mode == "eval":
+        register(
+            id='drone-2d-test',
+            entry_point='drone_2d_env:Drone2dEnv',
+            kwargs=env_test_config
+        )
+        env = gym.make('drone-2d-test')
 
-    model = PPO.load(agent_path,env)
+        model = PPO.load(agent_path,env)
 
-    random_seed = int(time.time())
-    model.set_random_seed(random_seed)
+        random_seed = int(time.time())
+        model.set_random_seed(random_seed)
 
-    obs = env.reset()
+        obs = env.reset()
 
-    try:
-        while runs < run_n_times:
-            env.render()
+        try:
+            while True:
+                env.render()
 
-            action, _states = model.predict(obs)
+                action, _states = model.predict(obs)
 
-            obs, reward, done, info = env.step(action)
+                obs, reward, done, info = env.step(action)
 
-            if done is True:
-                if info['n_successful_runs'] == 1:
-                    successes += 1
-                if info['n_failed_runs'] == 1:
-                    fails += 1
-                if info['n_collisions'] == 1:
-                    collisions += 1
-                flight_paths.append(info['flight_path'])
-                apes.append(info['APE'])
-                time_spent.append(info['env_steps'])
-                runs += 1
-                if continuous_mode is True:
-                    state = env.reset()
-                else:
-                    break
-    finally:
-        env.close()
-        # Saving test results 
-        scenario = env_test_config['scenario']
-        file_path = 'Tests/'+scenario+'/test_'+str(len(os.listdir('Tests/'+scenario)))
-        os.makedirs(file_path,exist_ok=True)
-        apes = np.array(apes)
-        time_spent = np.array(time_spent)
+                if done is True:
+                    if continuous_mode is True:
+                        state = env.reset()
+                    else:
+                        break
+        finally:
+            env.close()
+    elif mode == "test":
+        #Want to run one of the test scenarios n times and save the results
+        register(
+            id='drone-2d-test',
+            entry_point='drone_2d_env:Drone2dEnv',
+            kwargs=env_test_config
+        )
+        env = gym.make('drone-2d-test')
 
-        with open(file_path+'/flight_paths', 'w') as json_file:
-            json.dump(flight_paths, json_file)
+        model = PPO.load(agent_path,env)
 
-        np.save(file_path+'/apes.npy',apes)
-        with open(file_path+'/results.txt', 'w') as file:
-            file.write('Successes: '+str(successes)+'\n')
-            file.write('Fails: '+str(fails)+'\n')
-            file.write('Collisions: '+str(collisions)+'\n')
-            file.write('Success rate: '+str(successes/(successes+fails))+'\n')
-            file.write('Collision rate: '+str(collisions/(successes+fails))+'\n')
-            file.write('Average APE: '+str(np.mean(apes))+'\n')
-            file.write('Average flight time: '+str(np.mean(time_spent))+'\n')
-            file.write('Agent path: '+agent_path+'\n')
-        
-        #Render all flight paths in a single plot
-        obstacles = []
-        space = pymunk.Space()
-        screen_width = env_test_config['screensize_x']
-        screen_height = env_test_config['screensize_y']
+        random_seed = int(time.time())
+        model.set_random_seed(random_seed)
 
-        if scenario == 'perpendicular':
-            wps,predef_path,obstacles=create_test_scenario(space,'perpendicular',screen_width,screen_height)
-        if scenario == 'parallel':
-            wps,predef_path,obstacles=create_test_scenario(space,'parallel',screen_width,screen_height)
-        if scenario == 'S_parallel':
-            wps,predef_path,obstacles=create_test_scenario(space,'S_parallel',screen_width,screen_height)
-        if scenario == 'corridor':
-            wps,predef_path,obstacles=create_test_scenario(space,'corridor',screen_width,screen_height)
-        if scenario == 'S_corridor':
-            wps,predef_path,obstacles=create_test_scenario(space,'S_corridor',screen_width,screen_height)
-        if scenario == 'large':
-            wps,predef_path,obstacles=create_test_scenario(space,'large',screen_width,screen_height)
-        if scenario == 'impossible':
-            wps,predef_path,obstacles=create_test_scenario(space,'impossible',screen_width,screen_height)
-        
-        pygame.init()
-        screen = pygame.display.set_mode((screen_width, screen_height))
-        pygame.display.set_caption("Drone2d Environment")
-        screen.fill((243, 243, 243))
+        obs = env.reset()
 
-        #Draw first wp:
-        pygame.draw.circle(screen, (0, 0, 0), (wps[0][0], screen_height-wps[0][1]), 5)
-        #Draw final wp:
-        pygame.draw.circle(screen, (0, 0, 0), (wps[-1][0], screen_height-wps[-1][1]), 5)
+        try:
+            while runs < run_n_times:
+                env.render()
 
-        #Drawing predefined path
-        predef_path_coords = predef_path.get_path_coord()
-        predef_path_coords = [(x, screen_height-y) for x, y in predef_path_coords]
-        pygame.draw.aalines(screen, (0, 0, 0), False, predef_path_coords)
+                action, _states = model.predict(obs)
 
-        #Draw obstacles:
-        draw_options = pymunk.pygame_util.DrawOptions(screen)
-        draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
-        space.debug_draw(draw_options)
+                obs, reward, done, info = env.step(action)
 
-        for path in flight_paths:
-            pygame.draw.aalines(screen, (16, 19, 97), False, path, 1)
+                if done is True:
+                    if info['n_successful_runs'] == 1:
+                        successes += 1
+                    if info['n_failed_runs'] == 1:
+                        fails += 1
+                    if info['n_collisions'] == 1:
+                        collisions += 1
+                    flight_paths.append(info['flight_path'])
+                    apes.append(info['APE'])
+                    time_spent.append(info['env_steps'])
+                    runs += 1
+                    if continuous_mode is True:
+                        state = env.reset()
+                    else:
+                        break
+        finally:
+            env.close()
+            # Saving test results 
+            scenario = env_test_config['scenario']
+            file_path = 'Tests/'+scenario+'/test_'+str(len(os.listdir('Tests/'+scenario)))
+            os.makedirs(file_path,exist_ok=True)
+            apes = np.array(apes)
+            time_spent = np.array(time_spent)
 
-        pygame.display.flip()
-        pygame.image.save(screen, file_path+'/flight_paths.png')
+            with open(file_path+'/flight_paths', 'w') as json_file:
+                json.dump(flight_paths, json_file)
+
+            np.save(file_path+'/apes.npy',apes)
+            with open(file_path+'/results.txt', 'w') as file:
+                file.write('Successes: '+str(successes)+'\n')
+                file.write('Fails: '+str(fails)+'\n')
+                file.write('Collisions: '+str(collisions)+'\n')
+                file.write('Success rate: '+str(successes/(successes+fails))+'\n')
+                file.write('Collision rate: '+str(collisions/(successes+fails))+'\n')
+                file.write('Average APE: '+str(np.mean(apes))+'\n')
+                file.write('Average flight time: '+str(np.mean(time_spent))+'\n')
+                file.write('Agent path: '+agent_path+'\n')
+            
+            #Render all flight paths in a single plot
+            obstacles = []
+            space = pymunk.Space()
+            screen_width = env_test_config['screensize_x']
+            screen_height = env_test_config['screensize_y']
+
+            if scenario == 'perpendicular':
+                wps,predef_path,obstacles=create_test_scenario(space,'perpendicular',screen_width,screen_height)
+            if scenario == 'parallel':
+                wps,predef_path,obstacles=create_test_scenario(space,'parallel',screen_width,screen_height)
+            if scenario == 'S_parallel':
+                wps,predef_path,obstacles=create_test_scenario(space,'S_parallel',screen_width,screen_height)
+            if scenario == 'corridor':
+                wps,predef_path,obstacles=create_test_scenario(space,'corridor',screen_width,screen_height)
+            if scenario == 'S_corridor':
+                wps,predef_path,obstacles=create_test_scenario(space,'S_corridor',screen_width,screen_height)
+            if scenario == 'large':
+                wps,predef_path,obstacles=create_test_scenario(space,'large',screen_width,screen_height)
+            if scenario == 'impossible':
+                wps,predef_path,obstacles=create_test_scenario(space,'impossible',screen_width,screen_height)
+            
+            pygame.init()
+            screen = pygame.display.set_mode((screen_width, screen_height))
+            pygame.display.set_caption("Drone2d Environment")
+            screen.fill((243, 243, 243))
+
+            #Draw first wp:
+            pygame.draw.circle(screen, (0, 0, 0), (wps[0][0], screen_height-wps[0][1]), 5)
+            #Draw final wp:
+            pygame.draw.circle(screen, (0, 0, 0), (wps[-1][0], screen_height-wps[-1][1]), 5)
+
+            #Drawing predefined path
+            predef_path_coords = predef_path.get_path_coord()
+            predef_path_coords = [(x, screen_height-y) for x, y in predef_path_coords]
+            pygame.draw.aalines(screen, (0, 0, 0), False, predef_path_coords)
+
+            #Draw obstacles:
+            draw_options = pymunk.pygame_util.DrawOptions(screen)
+            draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
+            space.debug_draw(draw_options)
+
+            for path in flight_paths:
+                pygame.draw.aalines(screen, (16, 19, 97), False, path, 1)
+
+            pygame.display.flip()
+            pygame.image.save(screen, file_path+'/flight_paths.png')
