@@ -94,17 +94,17 @@ mode = 'debug'
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-# mode = "eval"
-# agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
+mode = "eval"
+agent_path = 'ppo_agents/PFCA_see_3_obs_17_60.zip'
 
-scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
+# scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
+scenarios =['stage_1']
 
 for scenario in scenarios:
     env_test_config['scenario'] = scenario
-    mode = "test"
+    # mode = "test"
     run_n_times = 100
     runs = 0
-    agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
     flight_paths = []
     apes = []
     collisions = 0
@@ -303,26 +303,28 @@ for scenario in scenarios:
                 wps,predef_path,obstacles=create_test_scenario(space,'large',screen_width,screen_height)
             if scenario == 'impossible':
                 wps,predef_path,obstacles=create_test_scenario(space,'impossible',screen_width,screen_height)
+            if scenario == 'stage_1' or scenario == 'stage_2' or scenario == 'stage_3' or scenario == 'stage_4' or scenario == 'stage_5':
+                wps,predef_path,obstacles=None,None,None
             
             pygame.init()
             screen = pygame.display.set_mode((screen_width, screen_height))
             pygame.display.set_caption("Drone2d Environment")
             screen.fill((243, 243, 243))
+            if env_test_config['mode'] == 'test':
+                #Draw first wp:
+                pygame.draw.circle(screen, (0, 0, 0), (wps[0][0], screen_height-wps[0][1]), 5)
+                #Draw final wp:
+                pygame.draw.circle(screen, (0, 0, 0), (wps[-1][0], screen_height-wps[-1][1]), 5)
 
-            #Draw first wp:
-            pygame.draw.circle(screen, (0, 0, 0), (wps[0][0], screen_height-wps[0][1]), 5)
-            #Draw final wp:
-            pygame.draw.circle(screen, (0, 0, 0), (wps[-1][0], screen_height-wps[-1][1]), 5)
+                #Drawing predefined path
+                predef_path_coords = predef_path.get_path_coord()
+                predef_path_coords = [(x, screen_height-y) for x, y in predef_path_coords]
+                pygame.draw.aalines(screen, (0, 0, 0), False, predef_path_coords)
 
-            #Drawing predefined path
-            predef_path_coords = predef_path.get_path_coord()
-            predef_path_coords = [(x, screen_height-y) for x, y in predef_path_coords]
-            pygame.draw.aalines(screen, (0, 0, 0), False, predef_path_coords)
-
-            #Draw obstacles:
-            draw_options = pymunk.pygame_util.DrawOptions(screen)
-            draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
-            space.debug_draw(draw_options)
+                #Draw obstacles:
+                draw_options = pymunk.pygame_util.DrawOptions(screen)
+                draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
+                space.debug_draw(draw_options)
 
             for path in flight_paths:
                 pygame.draw.aalines(screen, (16, 19, 97), False, path, 1)

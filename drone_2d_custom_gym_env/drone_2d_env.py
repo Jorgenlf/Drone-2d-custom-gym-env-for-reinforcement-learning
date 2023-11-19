@@ -62,24 +62,27 @@ class Drone2dEnv(gym.Env):
         self.rew_AA = kwargs['rew_AA']
         self.use_Lambda = kwargs['use_Lambda']
         self.mode = kwargs['mode'] # 'curriculum' or 'test'
-        self.scenario = kwargs['scenario'] # 'paralell', 'S_parallel', 'perpendicular', 'corridor', 'S_corridor', 'large
+        self.scenario = kwargs['scenario'] # 'paralell', 'S_parallel', 'perpendicular', 'corridor', 'S_corridor', 'large', impossible, stage_1, stage_2, stage_3, stage_4, stage_5 
         self.k_obs = 3 #Number of obstacles the drone has angle and distance to must write more code to make this dynamic if even possible
 
         self.kwargs = kwargs
-
+        
         #To do curriculum learning
         #Jank way to get timestep by looking at the name of the saved model
         #NB requires the model to be saved as rl_model_*.zip
         #Requires the user to move the zips before training a new model
         # files = glob.glob('C:\CodeThatsSusceptibleToOneDrive\Specialization project\Drone-2d-custom-gym-env-for-reinforcement-learning\logs/rl_model_*.zip')
-        files = glob.glob('logs/rl_model_*.zip')
-        numbers = [int(file.split('_')[-2]) for file in files]
-        self.sim_num = 0
-        if numbers == []:
-            self.sim_num = 0
+        if self.scenario == 'stage_1' or self.scenario == 'stage_2' or self.scenario == 'stage_3' or self.scenario == 'stage_4' or self.scenario == 'stage_5':
+            self.sim_num = -1 #TODO make this more elegant This is just to avoid entering the ifs as if one uses simnum from file
         else:
-            self.sim_num = max(numbers)
-            # print("timestep:", self.sim_num)
+            files = glob.glob('logs/rl_model_*.zip')
+            numbers = [int(file.split('_')[-2]) for file in files]
+            self.sim_num = 0
+            if numbers == []:
+                self.sim_num = 0
+            else:
+                self.sim_num = max(numbers)
+                # print("timestep:", self.sim_num)
 
         #Rendering booleans
         self.render_sim = render_sim
@@ -208,68 +211,111 @@ class Drone2dEnv(gym.Env):
                 self.wps = generate_random_waypoints_2d(self.n_wps,self.path_segment_length,'DR',screen_x=self.screen_width,screen_y=self.screen_height)
             self.predef_path = QPMI2D(self.wps)
         
+        #TODO make random starting position under testing mode (?)
         if self.mode == 'test':
             if self.scenario == 'perpendicular':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'perpendicular',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'parallel':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'parallel',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)                
             if self.scenario == 'S_parallel':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_parallel',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'corridor':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'corridor',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'S_corridor':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_corridor',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'large':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'large',self.screen_width,self.screen_height)
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'impossible':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'impossible',self.screen_width,self.screen_height)
-            
+                x1 = self.wps[0][0]
+                y1 = self.wps[0][1]
+                angle_rand = random.uniform(-np.pi/4, np.pi/4)
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
+
             
         self.waypoint_index = 0
         #Make last waypoint the target
         self.x_target = self.wps[-1][0]
         self.y_target = self.wps[-1][1]
 
-        #Generating drone's starting position #TODO make random starting position under testing 
+        #Generating drone's starting position 
         x1 = self.wps[0][0]
         y1 = self.wps[0][1]
         angle_rand = random.uniform(-np.pi/4, np.pi/4)
-        self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
         if self.mode == 'curriculum':
             #Curriculum-----------------
-            if self.sim_num < 700000:
+            if (self.sim_num < 700000 and self.sim_num > 0) or self.scenario == 'stage_1':
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
                 self.obstacles = []
-            elif self.sim_num > 700000 and self.sim_num < 1000000:
+            elif (self.sim_num > 700000 and self.sim_num < 1000000) or self.scenario == 'stage_2':
                 self.obstacles = []
-                # self.initial_throw = False
                 random_x = random.uniform(100, self.screen_width-100)
                 random_y = random.uniform(100, self.screen_height-100)
                 self.drone = Drone(random_x, random_y, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-            elif self.sim_num > 1000000 and self.sim_num < 2000000: 
+            elif (self.sim_num > 1000000 and self.sim_num < 1600000) or (self.scenario == 'stage_3'): 
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-                # self.initial_throw = False
                 tmin = 1000000
-                tmax = 2000000
+                tmax = 1600000
                 cmin = 0.2
-                cmax = 1
-                spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
+                cmax = 0.6
+                if self.scenario == 'stage_3':
+                    spawn_chance = 0.6
+                else:
+                    spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
+
                 spawn = np.random.binomial(1,spawn_chance)
-                # print('\nspawn chance', spawn_chance)
-                # print('spawn', spawn)
-                if spawn == 1 and spawn_chance < 0.6: #First spawn obstacles around path
+                if spawn == 1: #First spawn obstacles around path
                     self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 100,onPath=False)
-                elif spawn == 1 and spawn_chance > 0.6: #Then spawn obstacles on path
-                    self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
-            else: #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
+            elif (self.sim_num > 1600000 and self.sim_num < 2000000) or self.scenario == 'stage_4':
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
-                # self.initial_throw = False
+                tmin = 1600000 
+                tmax = 2000000
+                cmin = 0.6
+                cmax = 1
+                if self.scenario == 'stage_4':
+                    spawn_chance = 1
+                else:
+                    spawn_chance = (self.sim_num - tmin)*(cmax-cmin)/(tmax-tmin) + cmin
+
+                spawn = np.random.binomial(1,spawn_chance)
+                if spawn == 1: #Then spawn obstacles on path
+                    self.obstacles = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+            elif (self.sim_num > 2000000)  or self.scenario == 'stage_5': #For the rest of the training spawn obstacles randomly around the path in addition to one on the path
+                self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
                 n_obs = np.random.normal(1, 4)
-                if n_obs < 0: n_obs = 1
-                self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
-                obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
-                self.obstacles.append(obs_on_path[0])
+                if n_obs < 0 and n_obs >-3: n_obs = 1 #24% of the time https://onlinestatbook.com/2/calculators/normal_dist.html
+                if n_obs < -3: n_obs = 0 #15% of the time
+                if n_obs == 0:
+                    self.obstacles = [] #unneccesary as inited as [] but for clarity 
+                else:
+                    self.obstacles = generate_obstacles_around_path(n_obs, self.space, self.predef_path, 0, 100)
+                    obs_on_path = generate_obstacles_around_path(1, self.space, self.predef_path, 0, 0,onPath=True)
+                    self.obstacles.append(obs_on_path[0])
             #---------------------------
         self.drone_radius = self.drone.drone_radius #=20/2 + 100/2 = 60
 
@@ -505,17 +551,14 @@ class Drone2dEnv(gym.Env):
 
     def get_obstacle_distances(self,k):
 
-        closest_distance = np.inf
         closest_obs_dict = {}
 
         for i, obstacle in enumerate(self.obstacles):
             distance,_,_ = self.distance_between_shapes(self.drone.frame_shape, obstacle.shape)
             closest_obs_dict[i] = distance
 
-        #Sort dictionary by value so closest obstacle is first
         sorted_obs_dict = {k: v for k, v in sorted(closest_obs_dict.items(), key=lambda item: item[1])}
 
-        #Get the k closest obstacles by slicing dictionary
         sorted_obs_dict = dict(list(sorted_obs_dict.items())[0:k])
 
         return sorted_obs_dict
@@ -523,8 +566,6 @@ class Drone2dEnv(gym.Env):
     def get_observation(self):
         # Drone velocities
         velocity_x, velocity_y = self.drone.frame_shape.body.velocity_at_local_point((0, 0))
-        # velocity_x = np.clip(velocity_x/1330, -1, 1)
-        # velocity_y = np.clip(velocity_y/1330, -1, 1)
         #Assume 1330 is max velocity of drone (it can be larger, but requires a lot of force/time to accelerate to that speed)
         velocity_x = self.m1to1(velocity_x, -1330, 1330)
         velocity_y = self.m1to1(velocity_y, -1330, 1330)
@@ -550,7 +591,6 @@ class Drone2dEnv(gym.Env):
         pos_y = self.m1to1(y, 0, self.screen_height)
 
         alphadrone = self.drone.frame_shape.body.angle
-
 
         if self.obstacles == []:
             closest_obs_distance = 1
@@ -613,24 +653,6 @@ class Drone2dEnv(gym.Env):
                 n2_closest_obs_distance = k_normed_obs_dists[2]
                 n2_sin_closest_obs_angle = k_sin_obs_angles[2]
                 n2_cos_closest_obs_angle = k_cos_obs_angles[2]
- 
-            #OLD
-            # closest_obs_distance = euc_dists[0]
-            # closest_obs_x_dist = x_dists[0]
-            # closest_obs_y_dist = ydists[0]
-            # # closest_obs_distance,closest_obs_x_dist,closest_obs_y_dist = self.distance_between_shapes(self.drone.frame_shape, self.obstacles[self.closest_obs_index].shape)
-            # closest_obs_x_dist = self.m1to1(closest_obs_x_dist, 0, self.screen_width)
-            # closest_obs_y_dist = self.m1to1(closest_obs_y_dist, 0, self.screen_height)
-            # closest_obs_distance = self.m1to1(closest_obs_distance, 0, np.sqrt(self.screen_width**2 + self.screen_height**2))
-            # #TODO decide if x and y necessary or if distance + angle is enough
-
-            # #Angle to closest obstacle
-            # closest_obs_angle = np.arctan2(y - self.obstacles[self.closest_obs_index].y_pos, x - self.obstacles[self.closest_obs_index].x_pos) #range -pi to pi
-            # #body frame
-            # closest_obs_angle = closest_obs_angle - alphadrone - np.pi
-            # closest_obs_angle = ssa(closest_obs_angle)
-            # sin_closest_obs_angle = np.sin(closest_obs_angle) #Pass out the sin and cos rather than just the angle to avoid jumps from -1 to 1.
-            # cos_closest_obs_angle = np.cos(closest_obs_angle)
 
         #Velocity angle
         velocity_x_, velocity_y_ = self.drone.frame_shape.body.velocity_at_local_point((0, 0)) #Velocity in body frame
