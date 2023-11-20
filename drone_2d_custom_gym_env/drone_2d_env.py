@@ -92,9 +92,9 @@ class Drone2dEnv(gym.Env):
         #Rendering initialization
         self.screen_width = screensize_x
         self.screen_height = screensize_y
+        self.flight_path = []
         if self.render_sim is True:
             self.init_pygame()
-            self.flight_path = []
             self.drop_path = []
             self.path_drone_shade = []
             self.draw_red_velocity = False
@@ -119,6 +119,8 @@ class Drone2dEnv(gym.Env):
         self.info['reach_end_reward'] = 0
         self.info['agressive_alpha_reward'] = 0
         self.info['dist_closest_obs'] = 0
+        self.info['total_reward'] = 0
+        self.total_reward = 0
         #Metrics for testing 
         # average path error APE, 
         # n collisions, 
@@ -269,7 +271,7 @@ class Drone2dEnv(gym.Env):
 
         if self.mode == 'curriculum':
             #Curriculum-----------------
-            if (self.sim_num < 700000 and self.sim_num > 0) or self.scenario == 'stage_1':
+            if (self.sim_num < 700000 and self.sim_num >= 0) or self.scenario == 'stage_1':
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
                 self.obstacles = []
             elif (self.sim_num > 700000 and self.sim_num < 1000000) or self.scenario == 'stage_2':
@@ -522,6 +524,7 @@ class Drone2dEnv(gym.Env):
         self.info['reach_end_reward'] = reach_end_reward
         self.info['agressive_alpha_reward'] = agressive_alpha_reward
         self.info['env_steps'] = self.current_time_step
+        
         if self.obstacles != []:
             self.info['dist_closest_obs'] = drone_closest_obs_dist
         else:
@@ -529,23 +532,29 @@ class Drone2dEnv(gym.Env):
 
         self.path_error += dist_from_path
         ape = self.path_error/self.current_time_step
+
+        self.total_reward += reward
         if end_cond_1 or end_cond_2 or end_cond_4 or end_cond_5:
             self.done = True
             if end_cond_1: 
                 print("Collision")
-                self.info['n_collisions'] += 1
-                self.info['n_failed_runs'] += 1
+                self.info['n_collisions'] = 1
+                self.info['n_failed_runs'] = 1
             if end_cond_2: 
                 print("Reached final waypoint")
-                self.info['n_successful_runs'] += 1
+                self.info['n_collisions'] = 0
+                self.info['n_successful_runs'] = 1
             if end_cond_4: 
                 print("Time is up")
-                self.info['n_failed_runs'] += 1
+                self.info['n_collisions'] = 0
+                self.info['n_failed_runs'] = 1
             if end_cond_5: 
                 print("Alpha angle too aggressive")
-                self.info['n_failed_runs'] += 1
+                self.info['n_collisions'] = 0
+                self.info['n_failed_runs'] = 1
             self.info['APE'] = ape
             self.info['flight_path'] = self.flight_path
+            self.info['total_reward'] = self.total_reward
 
         return obs, reward, self.done, self.info
 

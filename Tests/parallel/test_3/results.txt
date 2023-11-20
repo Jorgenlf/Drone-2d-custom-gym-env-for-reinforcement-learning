@@ -1,0 +1,8 @@
+Successes: 0
+Fails: 1
+Collisions: []
+Success rate: 0.0
+Collision rate: []
+Average APE: nan
+Average flight time: nan
+Agent path: ppo_agents/PFCA_see_3_obs_20_90.zip

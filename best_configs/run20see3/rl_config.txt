@@ -1,0 +1,1 @@
+{'total_timesteps': 9000000, 'ent_coef': 0.01}

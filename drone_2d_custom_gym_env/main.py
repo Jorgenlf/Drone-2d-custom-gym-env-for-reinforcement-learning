@@ -14,6 +14,19 @@ from rl_config import rl_config, env_test_config, env_train_config
 
 from gym.envs.registration import register
 
+def red_blue_grad(float):
+    '''takes in a float between 0 and 1 and returns a rgb value between red and blue'''
+    r = 0
+    g = 0
+    b = 0
+
+    if float < 0.5:
+        r = 255
+        b = 255*float*2
+    else:
+        r = 255*(1-float)*2
+        b = 255
+    return (r,g,b)
 
 def _manual_control(env):
     """ Manual control function.
@@ -89,28 +102,28 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-mode = 'debug'
+# mode = 'debug'
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
-mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_17_60.zip'
+# mode = "eval"
+agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
 
 # scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
-scenarios =['stage_1']
-
+scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
 for scenario in scenarios:
     env_test_config['scenario'] = scenario
-    # mode = "test"
+    mode = "test"
     run_n_times = 100
     runs = 0
     flight_paths = []
     apes = []
-    collisions = 0
+    collisions = []
     successes = 0
     fails = 0
     time_spent = []
+    rewards = []
 
 
     continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
@@ -250,11 +263,11 @@ for scenario in scenarios:
                         successes += 1
                     if info['n_failed_runs'] == 1:
                         fails += 1
-                    if info['n_collisions'] == 1:
-                        collisions += 1
+                    collisions.append(info['n_collisions'])
                     flight_paths.append(info['flight_path'])
                     apes.append(info['APE'])
                     time_spent.append(info['env_steps'])
+                    rewards.append(info['total_reward'])
                     runs += 1
                     if continuous_mode is True:
                         state = env.reset()
@@ -266,13 +279,19 @@ for scenario in scenarios:
             scenario = env_test_config['scenario']
             file_path = 'Tests/'+scenario+'/test_'+str(len(os.listdir('Tests/'+scenario)))
             os.makedirs(file_path,exist_ok=True)
-            apes = np.array(apes)
             time_spent = np.array(time_spent)
 
             with open(file_path+'/flight_paths', 'w') as json_file:
                 json.dump(flight_paths, json_file)
 
+            apes = np.array(apes)
+            collisions = np.array(collisions)
+            rewards = np.array(rewards)
+            time_spent = np.array(time_spent)
+            np.save(file_path+'/collisions.npy',collisions)    
+            np.save(file_path+'/rewards.npy',rewards)
             np.save(file_path+'/apes.npy',apes)
+            np.save(file_path+'/time_spent.npy',time_spent)
             with open(file_path+'/results.txt', 'w') as file:
                 file.write('Successes: '+str(successes)+'\n')
                 file.write('Fails: '+str(fails)+'\n')
@@ -326,8 +345,16 @@ for scenario in scenarios:
                 draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
                 space.debug_draw(draw_options)
 
-            for path in flight_paths:
-                pygame.draw.aalines(screen, (16, 19, 97), False, path, 1)
+            min_rew = np.min(rewards)
+            max_rew = np.max(rewards)
+            normd_rews = (rewards-min_rew)/(max_rew-min_rew)
+            for i, path in enumerate(flight_paths):
+                color = red_blue_grad(normd_rews[i])
+                if collisions[i] == 1:
+                    pygame.draw.aalines(screen, (255, 0, 0), False, path, 1)
+                else:
+                    pygame.draw.aalines(screen, color, False, path, 1)
 
             pygame.display.flip()
             pygame.image.save(screen, file_path+'/flight_paths.png')
+
