@@ -215,46 +215,97 @@ class Drone2dEnv(gym.Env):
         
         #TODO make random starting position under testing mode (?)
         if self.mode == 'test':
+            if self.render_sim is True:
+                self.spawn_rect =(0,0,0,0)
             if self.scenario == 'perpendicular':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'perpendicular',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 50
+                xmax = self.screen_width/2-100
+                ymax = self.screen_height-100
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'parallel':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'parallel',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2-300
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)                
             if self.scenario == 'S_parallel':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_parallel',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2-300
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'corridor':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'corridor',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2-400
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'S_corridor':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'S_corridor',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2-450
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'large':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'large',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2-self.screen_width/4 - 50
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
             if self.scenario == 'impossible':
                 self.wps,self.predef_path,self.obstacles=create_test_scenario(self.space,'impossible',self.screen_width,self.screen_height)
-                x1 = self.wps[0][0]
-                y1 = self.wps[0][1]
+                xmin = 50
+                ymin = 150
+                xmax = self.screen_width/2
+                ymax = self.screen_height-300
+                width = xmax-xmin
+                height = ymax    
+                x1 = random.uniform(xmin, xmax)
+                y1 = random.uniform(ymin, ymax)
+                self.spawn_rect = (xmin,ymin,width,height)
                 angle_rand = random.uniform(-np.pi/4, np.pi/4)
                 self.drone = Drone(x1, y1, angle_rand, 20, 100, 0.2, 0.4, 0.4, self.space)
 
@@ -357,10 +408,10 @@ class Drone2dEnv(gym.Env):
         #Saving drone's position for drawing
         if self.first_step is True:
             if self.render_sim is True and self.render_path is True: self.add_postion_to_drop_path()
-            if self.render_sim is True and self.render_path is True: self.add_postion_to_flight_path()
+            if self.render_path is True: self.add_postion_to_flight_path()
             self.first_step = False
         else:
-            if self.render_sim is True and self.render_path is True: self.add_postion_to_flight_path()
+            if self.render_path is True: self.add_postion_to_flight_path()
         if self.render_sim is True and self.render_shade is True:
             x, y = self.drone.frame_shape.body.position
             if np.abs(self.shade_x-x) > self.drone_shade_distance or np.abs(self.shade_y-y) > self.drone_shade_distance:
@@ -770,6 +821,10 @@ class Drone2dEnv(gym.Env):
         pygame.draw.circle(self.screen, (0, 0, 0), (self.wps[0][0], self.screen_height-self.wps[0][1]), 5)
         #Draw final wp:
         pygame.draw.circle(self.screen, (0, 0, 0), (self.wps[-1][0], self.screen_height-self.wps[-1][1]), 5)
+
+        if self.mode == 'test':
+            #Drawing the rectangle where the drone can spawn using self.spawn_rect
+            pygame.draw.rect(self.screen, (0, 0, 0), self.spawn_rect, 2)
 
 
         drone_x, drone_y = self.drone_pos

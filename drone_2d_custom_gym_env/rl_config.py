@@ -39,12 +39,35 @@ env_train_config = {
     'rew_AA'                : -1,
     'use_Lambda'            : True,
     'mode'                  : 'test', # 'curriculum' or 'test' When test nwps and length are fixed
-    'scenario'              : 'parallel', #'parallel', 'S_paralell', 'perpendicular', 'corridor', 'S_corridor', 'large' and 'impossible' Extend it to contain stage_1-5 of curriculum learning
+    'scenario'              : 'S_parallel', 
 }
+#Test scenarios
+# 'corridor', 
+# 'impossible' 
+# 'large' 
+# 'parallel', 
+# 'perpendicular', 
+# 'S_parallel', 
+# 'S_corridor', 
+# Test in different stages of the curriculum learning
+# 'stage_1',
+# 'stage_2',
+# 'stage_3',
+# 'stage_4',
+# 'stage_5',
 
+#For vizualization purposes
+# env_test_config = env_train_config.copy()
+# env_test_config['render_sim']       = True
+# env_test_config['render_path']      = True
+# env_test_config['render_shade']     = True
+# env_test_config['initial_throw']    = False
+# env_test_config['n_fall_steps']     = 0
+
+#For speed purposes comment out the one above and use the one below
 env_test_config = env_train_config.copy()
-env_test_config['render_sim']       = True
+env_test_config['render_sim']       = False
 env_test_config['render_path']      = True
-env_test_config['render_shade']     = True
+env_test_config['render_shade']     = False
 env_test_config['initial_throw']    = False
 env_test_config['n_fall_steps']     = 0

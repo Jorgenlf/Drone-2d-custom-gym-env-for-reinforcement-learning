@@ -1,0 +1,8 @@
+Successes: 17
+Fails: 83
+Collisions: 69
+Success rate: 0.17
+Collision rate: 0.69
+Average APE: 24.35329544757922
+Average flight time: 579.57
+Agent path: ppo_agents/PFCA_see_3_obs_17_90.zip
