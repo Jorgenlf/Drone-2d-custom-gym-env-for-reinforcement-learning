@@ -802,7 +802,7 @@ class Drone2dEnv(gym.Env):
         textRect.topleft = (0, font_size*3)
         self.screen.blit(text, textRect)
         #Draw the agressive alpha reward below the path progression reward
-        text = font.render('Agressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+        text = font.render('Aggressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
         textRect = text.get_rect()
         textRect.topleft = (0, font_size*4)
         self.screen.blit(text, textRect)

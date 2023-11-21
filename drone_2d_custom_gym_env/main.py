@@ -108,8 +108,7 @@ total_timesteps = rl_config['total_timesteps']
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_17_90.zip'
-
+agent_path = 'ppo_agents/PFCA_see_3_obs_20_90.zip'
 # scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
 # scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
 # for scenario in scenarios:
@@ -277,6 +276,7 @@ elif mode == "test":
         env.close()
         # Saving test results 
         scenario = env_test_config['scenario']
+        agent_nr = agent_path.split('_')[-2].split('.')[0]
         file_path = 'Tests/'+scenario+'/test_'+str(len(os.listdir('Tests/'+scenario)))
         os.makedirs(file_path,exist_ok=True)
         time_spent = np.array(time_spent)
@@ -293,7 +293,7 @@ elif mode == "test":
         np.save(file_path+'/rewards.npy',rewards)
         np.save(file_path+'/apes.npy',apes)
         np.save(file_path+'/time_spent.npy',time_spent)
-        with open(file_path+'/results.txt', 'w') as file:
+        with open(file_path+'/'+scenario+'_'+str(agent_nr)+'_results.txt', 'w') as file:
             file.write('Successes: '+str(successes)+'\n')
             file.write('Fails: '+str(fails)+'\n')
             file.write('Collisions: '+str(collision_sum)+'\n')
@@ -359,5 +359,18 @@ elif mode == "test":
                 else:
                     pygame.draw.aalines(screen, color, False, path, 1)
         else: pass
+
+        #Draw a color bar explaining the color coding of the flight paths blue = high reward, red = low reward
+        for i in range(100):
+            pygame.draw.line(screen, red_blue_grad(i/100), (screen_width-100, screen_height-900-i), (screen_width-50, screen_height-900-i), 1)
+
+        font = pygame.font.SysFont('Arial', 20)
+        text = font.render('High reward', True, (0,0,0))
+        screen.blit(text, (screen_width-130, screen_height-1020))
+
+        font = pygame.font.SysFont('Arial', 20)
+        text = font.render('Low reward', True, (0,0,0))
+        screen.blit(text, (screen_width-130, screen_height-900))
+
         pygame.display.flip()
-        pygame.image.save(screen, file_path+'/flight_paths.png')
+        pygame.image.save(screen, file_path+'/'+scenario+'_'+str(agent_nr)+'.png')
