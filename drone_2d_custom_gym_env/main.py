@@ -114,7 +114,7 @@ agent_path = 'ppo_agents/PFCA_see_3_obs_20_90.zip'
 # for scenario in scenarios:
     # env_test_config['scenario'] = scenario
 mode = "test"
-run_n_times = 100
+run_n_times = 10
 runs = 0
 flight_paths = []
 apes = []
@@ -364,13 +364,13 @@ elif mode == "test":
         for i in range(100):
             pygame.draw.line(screen, red_blue_grad(i/100), (screen_width-100, screen_height-900-i), (screen_width-50, screen_height-900-i), 1)
 
-        font = pygame.font.SysFont('Arial', 20)
+        font = pygame.font.SysFont('Arial', 30)
         text = font.render('High reward', True, (0,0,0))
-        screen.blit(text, (screen_width-130, screen_height-1020))
+        screen.blit(text, (screen_width-140, screen_height-1030))
 
-        font = pygame.font.SysFont('Arial', 20)
+        font = pygame.font.SysFont('Arial', 30)
         text = font.render('Low reward', True, (0,0,0))
-        screen.blit(text, (screen_width-130, screen_height-900))
+        screen.blit(text, (screen_width-140, screen_height-910))
 
         pygame.display.flip()
         pygame.image.save(screen, file_path+'/'+scenario+'_'+str(agent_nr)+'.png')

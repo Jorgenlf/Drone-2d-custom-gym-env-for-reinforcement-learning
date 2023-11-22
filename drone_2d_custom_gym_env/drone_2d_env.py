@@ -213,7 +213,7 @@ class Drone2dEnv(gym.Env):
                 self.wps = generate_random_waypoints_2d(self.n_wps,self.path_segment_length,'DR',screen_x=self.screen_width,screen_y=self.screen_height)
             self.predef_path = QPMI2D(self.wps)
         
-        #TODO make random starting position under testing mode (?)
+        #Test scenario generation
         if self.mode == 'test':
             if self.render_sim is True:
                 self.spawn_rect =(0,0,0,0)

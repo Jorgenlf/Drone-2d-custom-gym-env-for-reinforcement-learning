@@ -38,8 +38,8 @@ env_train_config = {
     'AA_band'               : np.pi/4, 
     'rew_AA'                : -1,
     'use_Lambda'            : True,
-    'mode'                  : 'curriculum', # 'curriculum' or 'test' When test nwps and length are fixed
-    'scenario'              : 'stage_5', 
+    'mode'                  : 'test', # 'curriculum' or 'test' When test nwps and length are fixed
+    'scenario'              : 'corridor', 
 }
 #Test scenarios
 # 'corridor', 
