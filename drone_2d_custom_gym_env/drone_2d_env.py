@@ -35,6 +35,7 @@ class Drone2dEnv(gym.Env):
         render_path = kwargs['render_path']
         render_shade = kwargs['render_shade']
         shade_distance = kwargs['shade_distance']
+        self.render_text = kwargs['render_text']
         n_steps = kwargs['n_steps']
         n_fall_steps = kwargs['n_fall_steps']
         change_target = kwargs['change_target']
@@ -780,37 +781,39 @@ class Drone2dEnv(gym.Env):
         #Debugging --------------------
 
         #Draw the reward  as text in top left corner
-        font_size = 16
-        font = pygame.font.Font('freesansbold.ttf', font_size)
-        text = font.render('Total reward: ' + str(round(self.info['reward'], 2)), True, (0, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, 0)
-        self.screen.blit(text, textRect)
-        #Draw the collision avoidance reward below the reward
-        text = font.render('Collision avoidance: ' + str(round(self.info['collision_avoidance_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, font_size)
-        self.screen.blit(text, textRect)
-        #Draw the path adherence reward below the collision avoidance reward
-        text = font.render('Path adherence: ' + str(round(self.info['path_adherence'], 2)), True, (0, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, font_size*2)
-        self.screen.blit(text, textRect)
-        #Draw the path progression reward below the path adherence reward
-        text = font.render('Path progression: ' + str(round(self.info['path_progression'], 2)), True, (0, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, font_size*3)
-        self.screen.blit(text, textRect)
-        #Draw the agressive alpha reward below the path progression reward
-        text = font.render('Aggressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, font_size*4)
-        self.screen.blit(text, textRect)
-        #Draw the closest obstacle distance below the agressive alpha reward
-        text = font.render('Closest obs dist: ' + str(round(self.info['dist_closest_obs'], 2)), True, (150, 0, 0), (243, 243, 243))
-        textRect = text.get_rect()
-        textRect.topleft = (0, font_size*5+10) #offset to separate from the rewards
-        self.screen.blit(text, textRect)
+        if self.render_text is True:
+            font_size = 16
+            font = pygame.font.Font('freesansbold.ttf', font_size)
+            text = font.render('Total reward: ' + str(round(self.info['reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, 0)
+            self.screen.blit(text, textRect)
+            #Draw the collision avoidance reward below the reward
+            text = font.render('Collision avoidance: ' + str(round(self.info['collision_avoidance_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, font_size)
+            self.screen.blit(text, textRect)
+            #Draw the path adherence reward below the collision avoidance reward
+            text = font.render('Path adherence: ' + str(round(self.info['path_adherence'], 2)), True, (0, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, font_size*2)
+            self.screen.blit(text, textRect)
+            #Draw the path progression reward below the path adherence reward
+            text = font.render('Path progression: ' + str(round(self.info['path_progression'], 2)), True, (0, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, font_size*3)
+            self.screen.blit(text, textRect)
+            #Draw the agressive alpha reward below the path progression reward
+            text = font.render('Aggressive alpha: ' + str(round(self.info['agressive_alpha_reward'], 2)), True, (0, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, font_size*4)
+            self.screen.blit(text, textRect)
+            #Draw the closest obstacle distance below the agressive alpha reward
+            text = font.render('Closest obs dist: ' + str(round(self.info['dist_closest_obs'], 2)), True, (150, 0, 0), (243, 243, 243))
+            textRect = text.get_rect()
+            textRect.topleft = (0, font_size*5+10) #offset to separate from the rewards
+            self.screen.blit(text, textRect)
+
 
         #Drawing predefined path
         predef_path_coords = self.predef_path.get_path_coord()

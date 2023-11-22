@@ -102,7 +102,7 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-# mode = 'debug'
+mode = 'debug'
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
@@ -113,7 +113,7 @@ agent_path = 'ppo_agents/PFCA_see_3_obs_20_90.zip'
 # scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
 # for scenario in scenarios:
     # env_test_config['scenario'] = scenario
-mode = "test"
+# mode = "test"
 run_n_times = 10
 runs = 0
 flight_paths = []

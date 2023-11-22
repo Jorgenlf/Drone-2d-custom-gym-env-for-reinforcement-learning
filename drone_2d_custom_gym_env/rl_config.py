@@ -11,6 +11,7 @@ env_train_config = {
     'render_sim'            : False,
     'render_path'           : False,
     'render_shade'          : False,
+    'render_text'           : False,
     'shade_distance'        : 75,
     'n_steps'               : 1100,
     'n_fall_steps'          : 5,
@@ -38,8 +39,8 @@ env_train_config = {
     'AA_band'               : np.pi/4, 
     'rew_AA'                : -1,
     'use_Lambda'            : True,
-    'mode'                  : 'test', # 'curriculum' or 'test' When test nwps and length are fixed
-    'scenario'              : 'corridor', 
+    'mode'                  : 'curriculum', # 'curriculum' or 'test' When test nwps and length are fixed
+    'scenario'              : 'stage_5',
 }
 #Test scenarios
 # 'corridor', 
@@ -57,17 +58,18 @@ env_train_config = {
 # 'stage_5',
 
 #For vizualization purposes
-# env_test_config = env_train_config.copy()
-# env_test_config['render_sim']       = True
-# env_test_config['render_path']      = True
-# env_test_config['render_shade']     = True
-# env_test_config['initial_throw']    = False
-# env_test_config['n_fall_steps']     = 0
-
-#For speed purposes comment out the one above and use the one below
 env_test_config = env_train_config.copy()
-env_test_config['render_sim']       = False
+env_test_config['render_sim']       = True
 env_test_config['render_path']      = True
-env_test_config['render_shade']     = False
+env_test_config['render_shade']     = True
+env_test_config['render_text']      = False
 env_test_config['initial_throw']    = False
 env_test_config['n_fall_steps']     = 0
+
+#For speed purposes comment out the one above and use the one below
+# env_test_config = env_train_config.copy()
+# env_test_config['render_sim']       = False
+# env_test_config['render_path']      = True
+# env_test_config['render_shade']     = False
+# env_test_config['initial_throw']    = False
+# env_test_config['n_fall_steps']     = 0
