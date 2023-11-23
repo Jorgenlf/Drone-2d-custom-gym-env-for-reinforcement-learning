@@ -29,7 +29,7 @@ test_nr = 5
 screen_width = 1300
 screen_height = 1300
 
-file_path = 'Tests/'+scenario+'/test_'+str(test_nr)
+file_path = 'Tests/agent_'+agent_nr+'/test_'+str(test_nr)+scenario
 
 # Retrieve the flight paths, rewards and collisions from the test
 with open(file_path+'/flight_paths') as json_file:
@@ -103,4 +103,5 @@ text = font.render('Low reward', True, (0,0,0))
 screen.blit(text, (screen_width-140, screen_height-910))
 
 pygame.display.flip()
+file_path = 'Tests/agent_'+agent_nr+'/test_'+str(test_nr)+'plots'
 pygame.image.save(screen, file_path+'/'+scenario+'_'+str(agent_nr)+'.png')

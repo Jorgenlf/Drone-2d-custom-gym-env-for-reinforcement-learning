@@ -102,19 +102,19 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-mode = 'debug'
+# mode = 'debug'
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_20_90.zip'
+agent_path = 'ppo_agents/PFCA_see_3_obs_21_90.zip'
 # scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
 # scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
 # for scenario in scenarios:
     # env_test_config['scenario'] = scenario
-# mode = "test"
-run_n_times = 10
+mode = "test"
+run_n_times = 100
 runs = 0
 flight_paths = []
 apes = []
@@ -277,8 +277,15 @@ elif mode == "test":
         # Saving test results 
         scenario = env_test_config['scenario']
         agent_nr = agent_path.split('_')[-2].split('.')[0]
-        file_path = 'Tests/'+scenario+'/test_'+str(len(os.listdir('Tests/'+scenario)))
+        agent = 'agent_'+agent_nr
+        if scenario not in os.listdir('Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)): 
+            file_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)+'/'+scenario
+            plot_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)+'/plots'
+        else: 
+            file_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent)))+'/'+scenario
+            plot_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent)))+'/plots'
         os.makedirs(file_path,exist_ok=True)
+        os.makedirs(plot_path,exist_ok=True)
         time_spent = np.array(time_spent)
 
         with open(file_path+'/flight_paths', 'w') as json_file:
@@ -373,4 +380,5 @@ elif mode == "test":
         screen.blit(text, (screen_width-140, screen_height-910))
 
         pygame.display.flip()
-        pygame.image.save(screen, file_path+'/'+scenario+'_'+str(agent_nr)+'.png')
+
+        pygame.image.save(screen, plot_path+'/'+scenario+'_'+str(agent_nr)+'.png')

@@ -500,17 +500,21 @@ class Drone2dEnv(gym.Env):
 
             reward_collision_avoidance = 0
             if (drone_closest_obs_dist < danger_range) and (angle_diff < danger_angle):
-                # range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
-                # angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
-                # reward_collision_avoidance = (range_rew + angle_rew)*2 #TODO make if elif else if this is to be used.
+                range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1) #same fcn in if and elif, but need this structure to color red and orange correctly
+                angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
+                if angle_rew > 0: angle_rew = 0 
+                if range_rew > 0: range_rew = 0
+                reward_collision_avoidance = range_rew + angle_rew
+
                 self.draw_red_velocity = True
                 self.draw_orange_obst_vec = True
-            if drone_closest_obs_dist <danger_range:
+            elif drone_closest_obs_dist <danger_range:
                 range_rew = -(((danger_range+inv_abs_min_rew*danger_range)/(drone_closest_obs_dist+inv_abs_min_rew*danger_range)) -1)
                 angle_rew = -(((danger_angle+inv_abs_min_rew*danger_angle)/(angle_diff+inv_abs_min_rew*danger_angle)) -1)
                 if angle_rew > 0: angle_rew = 0 #In this case the angle reward may become positive as anglediff may !< danger_angle
                 if range_rew > 0: range_rew = 0
                 reward_collision_avoidance = range_rew + angle_rew
+                
                 self.draw_red_velocity = False
                 self.draw_orange_obst_vec = True
             else:
