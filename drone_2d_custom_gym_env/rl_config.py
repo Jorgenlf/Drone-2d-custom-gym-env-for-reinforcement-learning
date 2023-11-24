@@ -39,8 +39,8 @@ env_train_config = {
     'AA_band'               : np.pi/4, 
     'rew_AA'                : -1,
     'use_Lambda'            : True,
-    'mode'                  : 'curriculum', # 'curriculum' or 'test' When test nwps and length are fixed
-    'scenario'              : 'stage_2', # 'corridor', 'impossible', 'large', 'parallel', 'perpendicular', 'S_parallel', 'S_corridor', 'None' for no scenario
+    'mode'                  : 'test', # 'curriculum' or 'test' When test nwps and length are fixed
+    'scenario'              : 'large', # 'corridor', 'impossible', 'large', 'parallel', 'perpendicular', 'S_parallel', 'S_corridor', 'None' for no scenario
 }
 #Test scenarios
 # 'corridor', 
@@ -60,18 +60,20 @@ env_train_config = {
 #'None' for no scenario
 
 #For vizualization purposes
-# env_test_config = env_train_config.copy()
-# env_test_config['render_sim']       = True
-# env_test_config['render_path']      = True
-# env_test_config['render_shade']     = True
-# env_test_config['render_text']      = True
-# env_test_config['initial_throw']    = False
-# env_test_config['n_fall_steps']     = 0
-
-#For speed purposes comment out the one above and use the one below
-env_test_config = env_train_config.copy()
-env_test_config['render_sim']       = False
-env_test_config['render_path']      = True
-env_test_config['render_shade']     = False
-env_test_config['initial_throw']    = False
-env_test_config['n_fall_steps']     = 0
+vizualiation = True
+if vizualiation:
+    env_test_config = env_train_config.copy()
+    env_test_config['render_sim']       = True
+    env_test_config['render_path']      = True
+    env_test_config['render_shade']     = True
+    env_test_config['render_text']      = True
+    env_test_config['initial_throw']    = False
+    env_test_config['n_fall_steps']     = 0
+else:
+    #For speed purposes comment out the one above and use the one below
+    env_test_config = env_train_config.copy()
+    env_test_config['render_sim']       = False
+    env_test_config['render_path']      = True
+    env_test_config['render_shade']     = False
+    env_test_config['initial_throw']    = False
+    env_test_config['n_fall_steps']     = 0

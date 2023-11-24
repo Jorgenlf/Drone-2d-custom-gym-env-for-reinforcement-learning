@@ -108,7 +108,7 @@ total_timesteps = rl_config['total_timesteps']
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
 # mode = "eval"
-agent_path = 'ppo_agents/PFCA_see_3_obs_21_90.zip'
+agent_path = 'ppo_agents/PFCA_see_3_obs_19_90.zip'
 # scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
 # scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
 # for scenario in scenarios:
