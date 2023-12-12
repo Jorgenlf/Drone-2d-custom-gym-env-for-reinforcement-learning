@@ -7,6 +7,7 @@ import time
 from multiprocessing import freeze_support, get_context
 import multiprocessing
 import json
+import imageio
 
 from tensorboardlogger import *
 from drone_2d_env import *
@@ -102,19 +103,23 @@ def make_mp_env(env_id: str, rank: int, seed: int = 0):
 #---------------------------------#
 total_timesteps = rl_config['total_timesteps']
 
-# mode = 'debug'
+mode = 'debug'
+
+#---#
 
 # mode = "train"
 single_threaded = False #When false, multithreading used uses all but 2 cores
 
+#---#
+
 # mode = "eval"
 agent_path = 'ppo_agents/PFCA_see_3_obs_19_90.zip'
-# scenarios = ['stage_1','stage_2','stage_3','stage_4','stage_5']
-# scenarios = ['parallel','S_parallel','perpendicular','corridor','S_corridor','large','impossible']
-# for scenario in scenarios:
-    # env_test_config['scenario'] = scenario
+continuous_mode = True #if True, after completing one episode the next one will start automatically
+
+#---#
+
 mode = "test"
-run_n_times = 100
+run_n_times = 1
 runs = 0
 flight_paths = []
 apes = []
@@ -124,8 +129,8 @@ fails = 0
 time_spent = []
 rewards = []
 
-
-continuous_mode = True #if True, after completing one episode the next one will start automatically relevant for eval mode
+#gif creation
+frames = []
 #---------------------------------#
 
 if mode == "debug":
@@ -139,6 +144,7 @@ if mode == "debug":
     env = gym.make('drone-2d-test')
     _manual_control(env)
     exit()
+
 
 elif mode == "train":
     register(
@@ -256,6 +262,12 @@ elif mode == "test":
             action, _states = model.predict(obs)
 
             obs, reward, done, info = env.step(action)
+            
+            #gif gen
+            frame = pygame.surfarray.array3d(env.screen)
+            frame = np.rot90(frame)
+            frame = np.flipud(frame)
+            frames.append(frame)
 
             if done is True:
                 if info['n_successful_runs'] == 1:
@@ -275,9 +287,13 @@ elif mode == "test":
     finally:
         env.close()
         # Saving test results 
-        scenario = env_test_config['scenario']
         agent_nr = agent_path.split('_')[-2].split('.')[0]
+        scenario = env_test_config['scenario']
         agent = 'agent_'+agent_nr
+        os.makedirs(f'Gifs/{agent}',exist_ok=True)
+        gif_path = f'Gifs/{agent}'
+        imageio.mimsave(gif_path+f'/{scenario}.gif', [np.array(f) for i, f in enumerate(frames) if i%2 == 0], fps = 30)  # Adjust the duration as needed
+
         if scenario not in os.listdir('Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)): 
             file_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)+'/'+scenario
             plot_path = 'Tests/'+agent+'/test_'+str(len(os.listdir('Tests/'+agent))-1)+'/plots'
@@ -361,7 +377,7 @@ elif mode == "test":
         for i, path in enumerate(flight_paths):
             if len(path) > 2: #Some paths may not be drawn if the drone crashes immediately
                 color = red_blue_grad(normd_rews[i])
-                if collisions[i] == 1:
+                if collisions[i] == 1 or run_n_times == 1:
                     pygame.draw.aalines(screen, (255, 0, 0), False, path, 1)
                 else:
                     pygame.draw.aalines(screen, color, False, path, 1)
