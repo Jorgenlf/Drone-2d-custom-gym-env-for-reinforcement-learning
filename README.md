@@ -3,11 +3,6 @@
 ### Gifs of the reactive agent in each test scenario
 
 
-<video width="500" height="500" autoplay loop muted playsinline>
-    <source src="Gifs/agent_19/corridor.gif" type="video/gif">
-    Your browser does not support the video tag.
-</video>
-
 ## Installation
 
 ### Installation via pip - package installer for Python
