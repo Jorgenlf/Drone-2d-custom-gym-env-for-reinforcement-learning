@@ -11,7 +11,7 @@
 ### Environment prerequisites
 
 Environment to run needs Python3 with Gym, Pygame, Pymunk, Numpy and StableBaselines3
-libraries. All of them are automatically installed when the package is installed.
+libraries.
 
 ## Environment details
 
