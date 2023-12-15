@@ -1,14 +1,15 @@
 # Drone-2d-custom-gym-env-for-reinforcement-learning
 ## Gifs
 ### Gifs of the reactive agent in each test scenario
-<img src="Gifs/agent_19/S_corridor.gif" alt="Alt Text" width="500" height="500" loop>
 
-![Alt Text](Gifs/agent_19/S_parallel.gif)
+<img src="Gifs/agent_19/S_parallel.gif" alt="Alt Text" width="500" height="500" loop>
+
 ![Alt Text](Gifs/agent_19/corridor.gif)
 ![Alt Text](Gifs/agent_19/impossible.gif)
 ![Alt Text](Gifs/agent_19/large.gif)
 ![Alt Text](Gifs/agent_19/parallel.gif)
 ![Alt Text](Gifs/agent_19/perpendicular.gif)
+<img src="Gifs/agent_19/S_corridor.gif" alt="Alt Text" width="500" height="500" loop>
 
 ## Installation
 
