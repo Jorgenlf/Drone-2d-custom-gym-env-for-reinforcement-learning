@@ -2,10 +2,11 @@
 ## Gifs
 ### Gifs of the reactive agent in each test scenario
 
-![Alt Text](Gifs/agent_19/corridor.gif)
-<img src="Gifs/agent_19/corridor.gif" alt="Alt Text" width="500" height="500" loop>
 
-
+<video width="500" height="500" autoplay loop muted playsinline>
+    <source src="Gifs/agent_19/corridor.gif" type="video/gif">
+    Your browser does not support the video tag.
+</video>
 
 ## Installation
 
