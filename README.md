@@ -2,9 +2,10 @@
 ## Gifs
 ### Gifs of the reactive agent in each test scenario
 
-<img src="Gifs/agent_19/S_parallel.gif" alt="Alt Text" width="500" height="500" loop>
+![Alt Text](Gifs/agent_19/corridor.gif)
+<img src="Gifs/agent_19/corridor.gif" alt="Alt Text" width="500" height="500" loop>
 
-<img src="Gifs/agent_19/S_corridor.gif" alt="Alt Text" width="500" height="500" loop>
+
 
 ## Installation
 
