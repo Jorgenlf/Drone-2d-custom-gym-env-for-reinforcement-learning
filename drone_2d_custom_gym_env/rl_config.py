@@ -13,7 +13,7 @@ env_train_config = {
     'render_shade'          : False,
     'render_text'           : False,
     'shade_distance'        : 75,
-    'n_steps'               : 1100,
+    'n_steps'               : 1100, #AS this is max number of episode steps The rl_config['total_timesteps'] should be a dependent on this
     'n_fall_steps'          : 5,
     'change_target'         : False,
     'initial_throw'         : True,
