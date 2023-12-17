@@ -1,8 +1,13 @@
 # Drone-2d-custom-gym-env-for-reinforcement-learning
 ## Gifs
 ### Gifs of the reactive agent in each test scenario
-
-
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/corridor.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/S_corridor.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/parallel.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/S_parallel.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/perpendicular.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/large.gif)
+![](https://github.com/Jorgenlf/Drone-2d-custom-gym-env-for-reinforcement-learning/blob/main/Gifs/agent_19/impossible.gif)
 ## Installation
 
 ### Installation via pip - package installer for Python
